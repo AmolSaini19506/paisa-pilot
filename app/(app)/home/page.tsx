@@ -53,7 +53,6 @@ export default function Home() {
           </div>
           <div className="mc-amount"><Num value={tw.surplus} format={inr} /></div>
           <div className="mc-sub">after rent, EMI, SIPs and bills · {Math.round((tw.fixed / tw.income) * 100)}% of salary is locked</div>
-          <div className="mc-legend"><i />card colour follows what&apos;s left: green at ₹1L, maroon under ₹5k</div>
           <div className="mc-foot">
             <div><span>In</span><b><Num value={tw.income} format={inr} /></b></div>
             <div><span>Fixed</span><b><Num value={tw.fixed} format={inr} /></b></div>
@@ -127,7 +126,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="grid g2">
+      <div className="grid g2 lower">
         <section className="open">
           <div className="row between"><h2><span className="sticker-emoji">👀</span> Nudges</h2><button className="trace-btn" onClick={() => openTrace("all")}>Agent runs</button></div>
           <div style={{ marginTop: 8 }}>
@@ -139,7 +138,7 @@ export default function Home() {
             ))}
           </div>
         </section>
-        <div className="card">
+        <section className="open">
           <div className="row between"><h2><span className="sticker-emoji">🏝️</span> Goals runway</h2><Link href="/goals" className="btn sm ghost">What-if</Link></div>
           {proj.goals.map(({ goal, eta, onTrack }) => (
             <div key={goal.id} style={{ marginTop: 16 }}>
@@ -148,10 +147,10 @@ export default function Home() {
               <div className="small muted" style={{ marginTop: 6 }}>{inr(goal.saved)} of {inr(goal.target)} · ETA {new Date(eta).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}, target {new Date(goal.date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
             </div>
           ))}
-        </div>
+        </section>
       </div>
 
-      <div className="grid g2">
+      <div className="grid g2 lower">
         <section className="open">
           <h2><span className="sticker-emoji">💸</span> Where it goes</h2>
           <div className="small muted" style={{ marginTop: 2 }}>Average per month</div>

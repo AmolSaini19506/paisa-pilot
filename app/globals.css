@@ -433,3 +433,14 @@ section.open [style*="borderTop"]:hover, section.open .small[style*="borderBotto
 .main { min-width: 0; }
 .coach, .coach > *, .composer-wrap > * { min-width: 0; max-width: 100%; }
 .coach-context { overflow: hidden; }
+
+/* Lower home: one consistent open grid, split by hairlines instead of boxes */
+.grid.g2.lower { gap: 0; margin-top: 8px; border-top: 1px solid var(--hair); }
+.grid.g2.lower > section.open { padding: 28px 32px 28px 0; }
+.grid.g2.lower > section.open:nth-child(2) { padding: 28px 0 28px 32px; border-left: 1px solid var(--hair); }
+.grid.g2.lower > section.open > .row:first-child { min-height: 36px; }
+.grid.g2.lower + .grid.g2.lower { margin-top: 0; }
+@media (max-width: 860px) {
+  .grid.g2.lower > section.open, .grid.g2.lower > section.open:nth-child(2) { padding: 24px 0; border-left: none; }
+  .grid.g2.lower > section.open:nth-child(2) { border-top: 1px solid var(--hair); }
+}

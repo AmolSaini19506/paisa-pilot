@@ -35,7 +35,8 @@ export default function Goals() {
   const [letterBusy, setLetterBusy] = useState<string | null>(null);
   const proj = simulate(state, sc);
   const base = simulate(state, BASE);
-  useEffect(() => { setAccentOverride(proj.surplus); }, [proj.surplus]);
+  const moodRatio = base.surplus > 0 ? proj.surplus / base.surplus : 0.4;
+  useEffect(() => { setAccentOverride(moodRatio); }, [moodRatio]);
   useEffect(() => () => setAccentOverride(null), []);
   const changed = JSON.stringify(sc) !== JSON.stringify(BASE);
 
@@ -110,7 +111,7 @@ export default function Goals() {
                 <div style={{ fontWeight: 600 }}>{g.goal.name}</div>
                 <div className="small muted">target {fmtD(g.goal.date)}</div>
                 <div style={{ marginTop: 6, fontWeight: 600 }}>ETA {fmtD(g.eta)}</div>
-                <span className={`chip ${g.onTrack ? "lime" : "red"}`} style={{ marginTop: 6 }}>{g.onTrack ? "on track" : "late"}</span>
+                <span className={`chip ${g.onTrack ? "lime" : "red"}`} style={{ marginTop: 6 }}>{g.onTrack ? "On track" : "Late"}</span>
                 {changed && g.deltaDays !== 0 && <div className="small" style={{ marginTop: 6, fontWeight: 600, color: g.deltaDays > 0 ? "var(--green)" : "var(--red)" }}>{g.deltaDays > 0 ? ` ${g.deltaDays} days sooner` : ` ${-g.deltaDays} days later`}</div>}
               </div>
             ))}
@@ -126,7 +127,7 @@ export default function Goals() {
                   <Tooltip formatter={(v: any) => inr(+v)} />
                   <Legend />
                   <Line type="monotone" dataKey="base" name="Current path" stroke="#6b6b75" strokeWidth={2} strokeDasharray="6 4" dot={false} />
-                  <Line type="monotone" dataKey="scenario" name="Your what-if" stroke={accentFor(proj.surplus).accent} strokeWidth={4} dot={false} />
+                  <Line type="monotone" dataKey="scenario" name="Your what-if" stroke={accentFor(moodRatio).accent} strokeWidth={4} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
