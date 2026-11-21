@@ -297,6 +297,6 @@ export function monthStats(state: AppState, month: string) {
   const merchants: Record<string, number> = {};
   for (const t of ms) if (t.dir === "debit") merchants[t.merchant] = (merchants[t.merchant] ?? 0) + 1;
   const topMerchant = Object.entries(merchants).sort((a, b) => b[1] - a[1])[0];
-  const biggest = ms.filter((t) => t.dir === "debit" && !["Rent", "SIP/Investments", "Family transfers"].includes(t.category)).sort((a, b) => b.amount - a.amount)[0];
+  const biggest = ms.filter((t) => t.dir === "debit" && !["Rent", "SIP/Investments", "Family transfers", "EMI", "Bills & utilities"].includes(t.category)).sort((a, b) => b.amount - a.amount)[0];
   return { month, inc, out, saved: inc - out, cats, avg, top, topMerchant, biggest, count: ms.length };
 }

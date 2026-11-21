@@ -81,7 +81,8 @@ export default function Review() {
     setBusy(false);
   };
 
-  const top = s.top[0];
+  const FIXED = ["Rent", "EMI", "SIP/Investments", "Family transfers", "Bills & utilities"];
+  const top = s.top.find(([k]) => !FIXED.includes(k));
   const wrappedBg = "linear-gradient(135deg, #7b5cff 0%, #ff4fd8 55%, #ff8a3d 100%)";
 
   return (
