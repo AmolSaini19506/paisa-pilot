@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Tilt from "@/components/Tilt";
 import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
 import { CalendarRange, Coffee, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
 import { Num, useSpring } from "@/components/Motion";
@@ -45,7 +46,7 @@ export default function Home() {
       </div>
 
       <div className="hero-row">
-        <div className="money-card">
+        <Tilt className="money-card">
           <div className="row between">
             <span className="mc-label">Left to spend this month</span>
             <span className="mc-brand">paisa<b>pilot</b></span>
@@ -59,7 +60,7 @@ export default function Home() {
             <div><span>Buffer</span><b>{tw.efMonths.toFixed(1)} mo</b></div>
           </div>
           <span className="mc-sticker" aria-hidden>🪙</span>
-        </div>
+        </Tilt>
         <div className="quick">
           {[
             { href: "/import", icon: Inbox, label: "Paste SMS" },

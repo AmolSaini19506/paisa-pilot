@@ -327,3 +327,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--lime); box-shado
 :root { --accent-ink: #0b0b0b; transition: --lime .9s ease, --purple .9s ease, --lime-wash .9s ease, --tint .9s ease, --key-shadow .9s ease; }
 .mc-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; opacity: .75; margin-top: 8px; }
 .mc-legend i { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #7a1424, #d63a3a, #ff7a2f, #e2ad2b, #ffe14a, #9ed35a, #3dff72); box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+/* ===== Apple pass 3 ===== */
+/* 1. Money card tilts toward the pointer and springs back flat */
+.tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s var(--spring-bounce), box-shadow .45s var(--spring); }
+.tilt[data-track] { transition: transform .08s linear, box-shadow .45s var(--spring); }
+.money-card.tilt:hover { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px); }
+.money-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.45), transparent 45%); mix-blend-mode: soft-light; }
+.money-card[data-track]::before { opacity: 1; }
+/* 2. Feedback on pointer-down for every card and quick action */
+.card:active, .quick .q-item:active { transform: translateY(-2px) scale(.985) !important; transition-duration: .1s; }
+/* 3. Mobile tab bar: the lime pill slides between tabs instead of jumping */
+.nav-pill { display: none; }
+@media (max-width: 860px) {
+  .mobile-nav { position: fixed; }
+  .mobile-nav a.on { background: none; }
+  .nav-pill { display: block; position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / var(--n)); border-radius: 999px; background: var(--lime);
+    transform: translateX(calc(var(--i) * 100%)); transition: transform .5s var(--spring-bounce); }
+  .mobile-nav a { position: relative; z-index: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .tilt { transform: none !important; } .nav-pill { transition: none; } }

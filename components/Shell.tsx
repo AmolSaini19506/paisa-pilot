@@ -60,12 +60,14 @@ function TraceDrawer() {
   );
 }
 
+const buzz = () => { try { navigator.vibrate?.(8); } catch {} };
+
 function Segmented({ value, onChange }: { value: "roast" | "hype"; onChange: (v: "roast" | "hype") => void }) {
   return (
     <div className="seg" role="radiogroup" aria-label="Coach voice" data-v={value}>
       <span className="seg-thumb" aria-hidden />
-      <button role="radio" aria-checked={value === "roast"} onClick={() => onChange("roast")}><Flame size={14} />Roast</button>
-      <button role="radio" aria-checked={value === "hype"} onClick={() => onChange("hype")}><Heart size={14} />Hype</button>
+      <button role="radio" aria-checked={value === "roast"} onPointerDown={buzz} onClick={() => onChange("roast")}><Flame size={14} />Roast</button>
+      <button role="radio" aria-checked={value === "hype"} onPointerDown={buzz} onClick={() => onChange("hype")}><Heart size={14} />Hype</button>
     </div>
   );
 }
@@ -99,7 +101,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="main">{children}</main>
-      <nav className="mobile-nav">
+      <nav className="mobile-nav" style={{ ["--i" as any]: Math.max(0, NAV.findIndex((n) => n.href === path)), ["--n" as any]: NAV.length }}>
+        <span className="nav-pill" aria-hidden />
         {NAV.map((n) => (
           <Link key={n.href} href={n.href} className={path === n.href ? "on" : ""}><n.icon size={19} strokeWidth={1.75} />{n.short}</Link>
         ))}
