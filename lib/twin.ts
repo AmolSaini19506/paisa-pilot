@@ -69,7 +69,7 @@ export function detectRecurring(state: AppState): Recurring[] {
     }
     if (/cult/i.test(merchant)) {
       const fitness = state.txns.filter((t) => /decathlon|gym|protein|fitness/i.test(t.merchant + t.raw) && t.date >= "2026-09-21");
-      if (!fitness.length) { status = "unused"; note = "Zero fitness-related spends in 60 days. Ghost membership? 👻"; }
+      if (!fitness.length) { status = "unused"; note = "Zero fitness-related spends in 60 days. Ghost membership? "; }
     }
     out.push({
       merchant, category: s[0].category, amounts: s.map((t) => t.amount), last, prev,
@@ -256,7 +256,7 @@ export function nudges(state: AppState): Nudge[] {
       const proj = (p.spent / 21) * 30 - p.avg;
       const days = goa >= 0 ? daysGainedOnGoal(state, goa, Math.max(proj, 0)) : 0;
       out.push({
-        emoji: "🚨", tone: "warn",
+        emoji: "", tone: "warn",
         title: roast ? `${p.category} is in its villain era` : `${p.category} running a little hot`,
         body: roast
           ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days} days. The kitchen misses you bestie.`
@@ -266,25 +266,25 @@ export function nudges(state: AppState): Nudge[] {
   }
   const recs = detectRecurring(state);
   const pc = recs.find((r) => r.status === "price_changed");
-  if (pc) out.push({ emoji: "📈", tone: "warn", title: `${pc.merchant} raised its price`, body: `${pc.note}. That's ${inr((pc.last - pc.prev) * 12)}/year extra for the same shows.` });
+  if (pc) out.push({ emoji: "", tone: "warn", title: `${pc.merchant} raised its price`, body: `${pc.note}. That's ${inr((pc.last - pc.prev) * 12)}/year extra for the same shows.` });
   const un = recs.find((r) => r.status === "unused" && !state.cancelled.includes(r.merchant));
-  if (un) out.push({ emoji: "👻", tone: "warn", title: roast ? `${un.merchant} is ghosting your body, not your bank` : `${un.merchant} might be unused`, body: `${inr(un.last)}/month and ${un.note?.toLowerCase()}` });
+  if (un) out.push({ emoji: "", tone: "warn", title: roast ? `${un.merchant} is ghosting your body, not your bank` : `${un.merchant} might be unused`, body: `${inr(un.last)}/month and ${un.note?.toLowerCase()}` });
   const leak = chaiLeak(state);
-  out.push({ emoji: "☕", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. Halving it gets Goa ${goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0} days sooner.` });
+  out.push({ emoji: "", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. Halving it gets Goa ${goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0} days sooner.` });
   return out;
 }
 
 export function vibe(t: Txn): string {
-  if (t.dir === "credit") return t.category === "Salary" ? "payday W 💸" : "money in 🫶";
-  if (t.category === "Food delivery") return t.amount > 450 ? "delivery fee arc 🛵" : "comfort food 🍜";
-  if (t.category === "Snacks/Chai") return "chai run ☕";
-  if (t.category === "Shopping") return t.amount > 2000 ? "main character energy 💅" : "lil treat 🛍️";
-  if (t.category === "SIP/Investments") return "future you says thx 📈";
-  if (t.category === "Subscriptions") return "auto-pilot 📺";
-  if (t.category === "Rent") return "adulting tax 🏠";
-  if (t.category === "Other") return "mystery spend 🕵️";
-  if (t.category === "Groceries") return "certified W 🥦";
-  return "NPC purchase 🧍";
+  if (t.dir === "credit") return t.category === "Salary" ? "payday W " : "money in ";
+  if (t.category === "Food delivery") return t.amount > 450 ? "delivery fee arc " : "comfort food ";
+  if (t.category === "Snacks/Chai") return "chai run ";
+  if (t.category === "Shopping") return t.amount > 2000 ? "main character energy " : "lil treat ";
+  if (t.category === "SIP/Investments") return "future you says thx ";
+  if (t.category === "Subscriptions") return "auto-pilot ";
+  if (t.category === "Rent") return "adulting tax ";
+  if (t.category === "Other") return "mystery spend ";
+  if (t.category === "Groceries") return "certified W ";
+  return "NPC purchase ";
 }
 
 export function monthStats(state: AppState, month: string) {
