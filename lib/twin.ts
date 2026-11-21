@@ -355,14 +355,21 @@ export function monthStats(state: AppState, month: string) {
 /** This month's projected money left vs. the person's usual month. Drives both the money card and the mood colour. */
 export function monthLeft(state: AppState) {
   const usual = computeTwin(state).surplus;
-  const drift = paceCheck(state).reduce((a, p) => a + ((p.spent * p.avg) / (p.expected || 1) - p.avg), 0);
-  // a refund this month gives back money the pace check counted as spent, so only count refunds
-  // we can tie (by merchant) to a purchase in a paced category; others never entered the projection
+  // a refund this month gives back money the pace check counted as spent. Only refunds from the same merchant
+  // as a paced purchase this month count, and they come off that category's spend before extrapolating.
   const thisMonth = TODAY.slice(0, 7);
-  const paced = new Set(paceCheck(state).map((p) => p.category));
-  const key = (m: string) => m.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !/^(refund|neft|imps|upi|reversal|reversed|cr|dr)$/.test(w));
-  const tied = (r: { merchant: string }) => { const rk = key(r.merchant); return rk.length > 0 && state.txns.some((d) => d.dir === "debit" && paced.has(d.category) && d.date.startsWith(thisMonth) && key(d.merchant).some((w) => rk.includes(w))); };
-  const refunds = state.txns.filter((t) => t.dir === "credit" && t.category === "Refund" && t.date.startsWith(thisMonth) && tied(t)).reduce((a, t) => a + t.amount, 0);
-  const projected = Math.round(usual - drift + refunds);
+  const pace = paceCheck(state);
+  const paced = new Set(pace.map((p) => p.category));
+  const id = (m: string) => m.toLowerCase().replace(/\b(refund|reversal|reversed|neft|imps|rtgs|upi|cr|dr)\b/g, "").replace(/[^a-z0-9]/g, "");
+  const purchaseCat = new Map<string, string>();
+  for (const d of state.txns) if (d.dir === "debit" && paced.has(d.category) && d.date.startsWith(thisMonth) && id(d.merchant)) purchaseCat.set(id(d.merchant), d.category);
+  const refundBy: Record<string, number> = {};
+  for (const t of state.txns) {
+    if (t.dir !== "credit" || t.category !== "Refund" || !t.date.startsWith(thisMonth)) continue;
+    const cat = purchaseCat.get(id(t.merchant));
+    if (cat) refundBy[cat] = (refundBy[cat] ?? 0) + t.amount;
+  }
+  const drift = pace.reduce((a, p) => a + ((Math.max(0, p.spent - (refundBy[p.category] ?? 0)) * p.avg) / (p.expected || 1) - p.avg), 0);
+  const projected = Math.round(usual - drift);
   return { usual, projected, ratio: usual > 0 ? projected / usual : 0.4 };
 }

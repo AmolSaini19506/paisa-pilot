@@ -13,7 +13,7 @@ export function ruleMatches(r: Rule, t: Pick<Txn, "vpa" | "merchant" | "raw">): 
 /** True when every transaction rule `a` matches is guaranteed to match rule `b` (a is the same or narrower). */
 export function implies(a: Pick<Rule, "field" | "type" | "pattern">, b: Pick<Rule, "field" | "type" | "pattern">): boolean {
   if (a.field !== b.field) return false;
-  const A = a.pattern.toLowerCase().trim(), B = b.pattern.toLowerCase().trim();
+  const A = a.pattern.toLowerCase(), B = b.pattern.toLowerCase(); // same normalisation as ruleMatches
   if (!A || !B) return false;
   if (b.type === "equals") return a.type === "equals" && A === B;
   if (b.type === "prefix") {

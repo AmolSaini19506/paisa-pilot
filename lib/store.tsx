@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { initialState } from "./seed";
+import { rawTags } from "./parser";
 import type { AppState, Trace, TraceStep } from "./types";
 import { avgByCategory, byCategory, chaiLeak, computeTwin, detectRecurring, healthScore, monthLeft } from "./twin";
 
@@ -41,7 +42,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (raw) {
         const s = JSON.parse(raw);
         const rename = (m: string) => m.replace(/^BharatPe merchant (\d+)$/, "BharatPe $1");
-        if (s.version === 3) setState({ ...s, cancelled: (s.cancelled ?? []).map(rename), txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: "", merchant: rename(t.merchant) })) });
+        if (s.version === 3) setState({ ...s, cancelled: (s.cancelled ?? []).map(rename), txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: rawTags(t.raw), merchant: rename(t.merchant) })) });
       }
       const tok = localStorage.getItem(AUTH);
       setAuthed(!!tok && tok !== "1");

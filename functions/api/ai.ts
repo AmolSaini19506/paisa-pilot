@@ -231,7 +231,9 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           else if (c.name === "query_merchant") {
             const all = ctx.merchantsThisMonth?.all ?? ctx.merchantsThisMonth?.top ?? [];
             const q = String(a.merchant ?? "").toLowerCase().trim();
-            const hits = q ? all.filter((m: any) => m.merchant.toLowerCase().includes(q)) : all;
+            const partial = q ? all.filter((m: any) => m.merchant.toLowerCase().includes(q)) : all;
+            // exact name first, so ten bigger partial matches can never push the asked-for merchant out
+            const hits = [...partial.filter((m: any) => m.merchant.toLowerCase() === q), ...partial.filter((m: any) => m.merchant.toLowerCase() !== q)];
             out = { month: ctx.merchantsThisMonth?.month, merchants: q && hits.length ? hits.slice(0, 10) : all.slice(0, 10), note: hits.length || !q ? "exact totals" : `no merchant matched "${a.merchant}"` };
           }
           else if (c.name === "simulate") out = runSim(ctx, a);

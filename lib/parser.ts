@@ -75,6 +75,11 @@ export function isValidTxnDate(d: string | undefined, today = TODAY): boolean {
 }
 
 /** Keep only what categorising needs: mask account numbers, refs and balances. */
+/** Raw SMS/narration text is not kept. Keep only the few keywords later checks rely on (gym use, refunds). */
+export function rawTags(raw?: string): string {
+  return [...new Set((raw ?? "").toLowerCase().match(/decathlon|gym|protein|fitness|refund|reversal/g) ?? [])].join(" ");
+}
+
 export function redactRaw(raw: string): string {
   return raw
     .replace(/(avl\.?\s*bal|available balance|bal)[^.;]*/gi, "")
@@ -185,7 +190,7 @@ export function parseCsvRows(rows: Record<string, string>[]): ParsedSms[] {
     out.push({
       ok: true, smsKind: dir === "debit" ? "debit" : "credit", amount, dir,
       kind: /upi/i.test(narr) ? "upi" : /nach|ach|si-/i.test(narr) ? "autodebit" : "neft",
-      date: parseDate(r[dK]), vpa, merchant: prettyMerchant(narr.replace(/^upi[-/]/i, "").replace(/^(neft|imps|rtgs)( cr| dr)?[-/ ]+/i, "").replace(/^(refund|reversal)[-/ ]+/i, "").split(/[-/]/)[0] || narr, vpa),
+      date: parseDate(r[dK]), vpa, merchant: prettyMerchant(narr.replace(/^upi[-/]/i, "").replace(/^(neft|imps|rtgs)([ /](cr|dr))?[-/ ]+/i, "").replace(/^(refund|reversal)[-/ ]+/i, "").split(/[-/]/)[0] || narr, vpa),
       raw: narr,
     });
   }

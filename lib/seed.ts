@@ -1,5 +1,6 @@
 import { categorize } from "./categorize";
 import type { AppState, Goal, Kind, Profile, Txn } from "./types";
+import { rawTags } from "./parser";
 
 function rng(seed: number) {
   let s = seed;
@@ -155,7 +156,7 @@ export function generateSeed(): Txn[] {
 
 export function initialState(): AppState {
   // categorised above from the SMS text; the text itself is never kept
-  const txns = generateSeed().map((t) => ({ ...t, raw: "" }));
+  const txns = generateSeed().map((t) => ({ ...t, raw: rawTags(t.raw) }));
   return {
     version: 3,
     profile: PROFILE,

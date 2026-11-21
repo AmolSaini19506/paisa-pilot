@@ -1,5 +1,5 @@
 import { buildMemory, categorize } from "./categorize";
-import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, TODAY, type ParsedSms } from "./parser";
+import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, rawTags, TODAY, type ParsedSms } from "./parser";
 import { ai } from "./store";
 import type { AppState, TraceStep, Txn } from "./types";
 import { detectRecurring, inr, monthLeft } from "./twin";
@@ -112,6 +112,6 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   st("Twin builder", "Updated Money Twin + wrote memory diff", diff.join(" | "));
 
   // privacy: never keep the full SMS (balances, account numbers)
-  txns.forEach((t) => { t.raw = ""; });
+  txns.forEach((t) => { t.raw = rawTags(t.raw); });
   return { added: txns, skipped, steps, diff, llmUsed };
 }
