@@ -57,19 +57,30 @@ function heurCategory(text: string): { category: string; conf: number; reason: s
   return { category: "Other", conf: 0.3, reason: "Not enough signal" };
 }
 
+// Deterministic fraction words override the LLM (small models misread "ek tihai")
+function fixFractions(text: string, sc: any) {
+  const t = text.toLowerCase();
+  const frac = /tihai|one[- ]third|a third|1\/3/.test(t) ? 33 : /aadha|aadhi|half|1\/2/.test(t) ? 50 : /chauthai|quarter|1\/4/.test(t) ? 25 : 0;
+  if (!frac) return sc;
+  const out = { ...sc };
+  if (/swiggy|zomato|order|food|dining|khana/.test(t) && !/(\d+)\s*%/.test(t)) out.foodCut = frac;
+  if (/chai|leak|snack/.test(t) && !/(\d+)\s*%/.test(t) && !/swiggy|zomato|order|food|dining|khana/.test(t)) out.leakCut = frac;
+  return out;
+}
+
 function heurScenario(text: string) {
   const t = text.toLowerCase();
   const pct = (re: RegExp) => { const m = t.match(re); return m ? parseInt(m[1]) : 0; };
-  const half = /half|50/.test(t);
-  const third = /third/.test(t);
+  const half = /half|aadha|aadhi|50/.test(t);
+  const third = /third|tihai/.test(t);
   const sc: any = { foodCut: 0, leakCut: 0, shoppingCut: 0, rentHike: 0, incomeHike: 0, extraSip: 0, cancelSubs: 0 };
-  if (/swiggy|zomato|order|food|dining|eat/.test(t)) sc.foodCut = pct(/(\d+)\s*%?\s*(?:less|cut|kam)/) || (third ? 33 : half ? 50 : 30);
+  if (/swiggy|zomato|order|food|dining|eat|khana/.test(t)) sc.foodCut = pct(/(\d+)\s*%?\s*(?:less|cut|kam)/) || (third ? 33 : half ? 50 : 30);
   if (/chai|leak|snack/.test(t)) sc.leakCut = half ? 50 : pct(/(\d+)\s*%/) || 50;
   if (/shop|amazon|myntra/.test(t)) sc.shoppingCut = pct(/(\d+)\s*%/) || 30;
   if (/rent/.test(t)) sc.rentHike = pct(/rent[^\d]*(\d+)/) || 10;
   if (/hike|raise|increment|salary/.test(t)) sc.incomeHike = pct(/(?:hike|raise|increment)[^\d]*(\d+)/) || pct(/(\d+)\s*%\s*(?:hike|raise)/) || 10;
   const sip = t.match(/sip[^\d]*(\d[\d,]*)/); if (sip) sc.extraSip = parseInt(sip[1].replace(/,/g, ""));
-  if (/cancel|cult|gym/.test(t)) sc.cancelSubs = 1499;
+  if (/cancel|cult|gym|band/.test(t)) sc.cancelSubs = 1499;
   return sc;
 }
 
@@ -146,9 +157,9 @@ export async function onRequestPost(context: any) {
       step("Planner", "Parsing what-if sentence", payload.text);
       try {
         const out = await llm(FAST,
-          `Convert a user's what-if (English or Hinglish) into JSON {"foodCut":0-100,"leakCut":0-100,"shoppingCut":0-100,"rentHike":0-100,"incomeHike":0-100,"extraSip":rupees per month,"cancelSubs":rupees per month}. foodCut covers Swiggy/Zomato/dining. leakCut is tiny chai/snack UPI spends. Cancelling Cult.fit = 1499. Unmentioned fields = 0. Return ONLY JSON.`,
+          `Convert a user's what-if (English or Hinglish) into JSON {"foodCut":0-100,"leakCut":0-100,"shoppingCut":0-100,"rentHike":0-100,"incomeHike":0-100,"extraSip":rupees per month,"cancelSubs":rupees per month}. foodCut covers Swiggy/Zomato/dining. leakCut is tiny chai/snack UPI spends. Cancelling Cult.fit = 1499. Hinglish fractions: "ek tihai"/"a third" = 33, "aadha"/"half" = 50, "chauthai"/"a quarter" = 25. Unmentioned fields = 0. Return ONLY JSON.`,
           payload.text, 300);
-        const sc = json<any>(out);
+        const sc = fixFractions(payload.text, json<any>(out));
         step("Planner", `LLM (${FAST}) → scenario`, JSON.stringify(sc));
         return J({ data: sc, trace, llm: true });
       } catch (e: any) {
