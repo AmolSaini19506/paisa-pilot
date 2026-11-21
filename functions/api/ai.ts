@@ -229,7 +229,7 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           if (c.name === "get_twin") out = ctx.twin;
           else if (c.name === "query_spend") out = a.month === "avg" || !a.month ? ctx.avg : ctx.months?.[a.month] ?? ctx.avg;
           else if (c.name === "query_merchant") {
-            const all = ctx.merchantsThisMonth?.top ?? [];
+            const all = ctx.merchantsThisMonth?.all ?? ctx.merchantsThisMonth?.top ?? [];
             const q = String(a.merchant ?? "").toLowerCase().trim();
             const hits = q ? all.filter((m: any) => m.merchant.toLowerCase().includes(q)) : all;
             out = { month: ctx.merchantsThisMonth?.month, merchants: hits.length ? hits : all.slice(0, 10), note: hits.length || !q ? "exact totals" : `no merchant matched "${a.merchant}"` };
@@ -237,7 +237,8 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           else if (c.name === "simulate") out = runSim(ctx, a);
           else if (c.name === "remember_fact" && a.fact && /remember|from|next|going|will|plan|wedding|shaadi|hike|joining|moving|baby|loan|rent/i.test(last)) { facts.push({ fact: a.fact, date: a.date }); out = { saved: true }; }
           else continue;
-          results[c.name] = out;
+          if (c.name === "query_merchant") (results.query_merchant ??= []).push(out);
+          else results[c.name] = out;
           step("Coach", `tool: ${c.name}`, JSON.stringify(a).slice(0, 140));
         }
         // Step 3 — answer grounded in tool results

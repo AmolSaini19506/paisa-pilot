@@ -40,7 +40,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (s.version === 3) setState({ ...s, txns: (s.txns ?? []).map((t: { raw?: string }) => ({ ...t, raw: "" })) });
+        if (s.version === 3) setState({ ...s, txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: "", merchant: t.merchant.replace(/^BharatPe merchant (\d+)$/, "BharatPe $1") })) });
       }
       const tok = localStorage.getItem(AUTH);
       setAuthed(!!tok && tok !== "1");
@@ -61,7 +61,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password: pw }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.token) return j.error ?? "Wrong email or password.";
-      try { localStorage.setItem(AUTH, j.token); } catch {}
+      try { localStorage.setItem(AUTH, j.token); } catch { return "Your browser blocked saving the login. Turn off private mode or allow site data, then try again."; }
       setAuthed(true);
       return null;
     } catch {
@@ -99,15 +99,22 @@ export function authHeaders(h: Record<string, string> = {}): Record<string, stri
   return h;
 }
 
-function sessionExpired() {
+function currentToken(): string | null {
+  try { return localStorage.getItem(AUTH); } catch { return null; }
+}
+
+/** Log out only if the token that failed is still the current one (a newer login must survive an old 401). */
+export function sessionExpired(failedToken: string | null) {
+  if (failedToken !== currentToken()) return;
   try { localStorage.removeItem(AUTH); } catch {}
   if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.href = "/";
 }
 
 export async function ai<T = any>(task: string, payload: any): Promise<{ data: T; trace: TraceStep[]; llm: boolean; error?: string }> {
   try {
+    const token = currentToken();
     const r = await fetch("/api/ai", { method: "POST", headers: authHeaders({ "content-type": "application/json" }), body: JSON.stringify({ task, payload }) });
-    if (r.status === 401) sessionExpired();
+    if (r.status === 401) sessionExpired(token);
     const j = await r.json();
     return { data: j.data, trace: j.trace ?? [], llm: !!j.llm, error: j.error };
   } catch (e: any) {
@@ -124,7 +131,7 @@ export function agentContext(state: AppState) {
   const latest = state.txns.reduce((m, t) => (t.date.slice(0, 7) > m ? t.date.slice(0, 7) : m), "");
   const merchantTotals: Record<string, { total: number; count: number }> = {};
   for (const t of state.txns) if (t.dir === "debit" && t.date.startsWith(latest)) { const e = (merchantTotals[t.merchant] ??= { total: 0, count: 0 }); e.total += t.amount; e.count++; }
-  const topMerchants = Object.entries(merchantTotals).sort((a, b) => b[1].total - a[1].total).slice(0, 25).map(([merchant, v]) => ({ merchant, total: Math.round(v.total), count: v.count }));
+  const ranked = Object.entries(merchantTotals).sort((a, b) => b[1].total - a[1].total).map(([merchant, v]) => ({ merchant, total: Math.round(v.total), count: v.count }));
   const months: Record<string, Record<string, number>> = {};
   for (const m of ["2026-08", "2026-09", "2026-10", "2026-11"]) months[m] = round(byCategory(state.txns, m));
   return {
@@ -142,7 +149,7 @@ export function agentContext(state: AppState) {
     months,
     leak: Math.round(chaiLeak(state).monthly),
     recurring,
-    merchantsThisMonth: { month: latest, top: topMerchants },
+    merchantsThisMonth: { month: latest, top: ranked.slice(0, 25), all: ranked },
   };
 }
 function round(o: Record<string, number>) {

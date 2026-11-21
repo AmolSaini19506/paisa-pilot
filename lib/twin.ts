@@ -356,6 +356,9 @@ export function monthStats(state: AppState, month: string) {
 export function monthLeft(state: AppState) {
   const usual = computeTwin(state).surplus;
   const drift = paceCheck(state).reduce((a, p) => a + ((p.spent * p.avg) / (p.expected || 1) - p.avg), 0);
-  const projected = Math.round(usual - drift);
+  // a refund this month gives back money the pace check counted as spent
+  const thisMonth = TODAY.slice(0, 7);
+  const refunds = state.txns.filter((t) => t.dir === "credit" && t.category === "Refund" && t.date.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
+  const projected = Math.round(usual - drift + refunds);
   return { usual, projected, ratio: usual > 0 ? projected / usual : 0.4 };
 }

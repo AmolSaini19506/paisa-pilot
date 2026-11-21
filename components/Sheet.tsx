@@ -24,6 +24,24 @@ export default function Sheet({ open, onClose, title, children }: { open: boolea
     window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
   }, [mounted, onClose]);
 
+  // keyboard: move focus in, keep Tab inside, give it back to the opener on close
+  useEffect(() => {
+    if (!mounted) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const el = panel.current;
+    const focusables = () => el ? [...el.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute("disabled")) : [];
+    (focusables()[0] ?? el)?.focus();
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const f = focusables(); if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    window.addEventListener("keydown", trap);
+    return () => { window.removeEventListener("keydown", trap); opener?.focus?.(); };
+  }, [mounted]);
+
   function dismiss() { setClosing(true); setTimeout(() => { setMounted(false); setClosing(false); setOffset(0); }, 320); }
 
   const mobile = () => window.matchMedia("(max-width: 860px)").matches;
@@ -57,7 +75,7 @@ export default function Sheet({ open, onClose, title, children }: { open: boolea
       <div className={`sheet-scrim ${state}`} onClick={onClose} style={{ opacity: closing ? 0 : undefined }} />
       <div
         ref={panel}
-        role="dialog" aria-modal="true" aria-label={title}
+        role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}
         className={`sheet ${state} ${dragging ? "dragging" : ""}`}
         style={{ ["--off" as any]: `${offset}px` }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}

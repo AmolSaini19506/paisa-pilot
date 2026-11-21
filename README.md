@@ -19,3 +19,10 @@ Next.js (static export) served by a Cloudflare Worker with static assets (`worke
 Cloudflare Workers Builds connected to this repo. Build command `npm run build`, deploy command `npx wrangler deploy`.
 
 Judge login: `judge@paisapilot.app` / `chai2026` (demo data, stored in the browser).
+
+## Login and API auth
+
+The password is checked by the Worker (`POST /api/login`), which returns a signed session token. `/api/ai` and `/api/pdf` reject requests without a valid token.
+
+- **Production:** set a Worker secret named `AUTH_SECRET` (any long random string) in Cloudflare → Workers → paisa-pilot → Settings → Variables and secrets. Without it, login is refused. `JUDGE_EMAIL` and `JUDGE_PASSWORD` can override the demo credentials.
+- **Local:** `next dev` has no Worker, so login won't work there. Build and run the Worker instead: `npm run build && npx wrangler dev --var DEV_AUTH:1`.

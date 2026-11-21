@@ -28,7 +28,9 @@ export default function Txns() {
     const needle = q.trim().toLowerCase();
     if (needle) {
       const num = needle.replace(/[₹,\s]/g, "");
-      l = l.filter((t) => `${t.merchant} ${t.vpa ?? ""} ${t.category}`.toLowerCase().includes(needle) || (/^\d+(\.\d+)?$/.test(num) && String(t.amount).startsWith(num)));
+      const isNum = /^\d+(\.\d+)?$/.test(num);
+      const exact = isNum && num.includes(".") ? parseFloat(num) : null;
+      l = l.filter((t) => `${t.merchant} ${t.vpa ?? ""} ${t.category}`.toLowerCase().includes(needle) || (isNum && (exact !== null ? t.amount === exact : String(t.amount).startsWith(num))));
     }
     return l;
   }, [state.txns, filter, q]);
@@ -42,7 +44,11 @@ export default function Txns() {
     const r = await ai<any>("rule", { txn: t, category, candidate: cand, examples });
     const llmRule = r.data?.pattern ? { field: r.data.field ?? cand.field, type: r.data.type ?? cand.type, pattern: String(r.data.pattern).toLowerCase(), category, why: r.data.why ?? cand.why } : null;
     // a rule on a payment aggregator (BharatPe, Paytm QR...) would sweep up unrelated shops: keep the narrow one
-    const rule = llmRule && !AGGREGATOR.test(llmRule.pattern.trim()) ? llmRule : { field: cand.field, type: cand.type, pattern: cand.pattern.toLowerCase(), category, why: cand.why };
+    const local = { field: cand.field, type: cand.type, pattern: cand.pattern.toLowerCase(), category, why: cand.why };
+    const hits = (r0: typeof local) => state.txns.filter((x) => x.dir === "debit" && ruleMatches({ ...r0, id: "", createdAt: "", hits: 0 } as Rule, x)).length;
+    // the AI may only narrow the local rule, never widen it (no aggregator names, bank handles or tiny fragments)
+    const safe = llmRule && llmRule.pattern.trim().length >= 4 && !llmRule.pattern.includes("@") && !AGGREGATOR.test(llmRule.pattern.trim()) && hits(llmRule as typeof local) <= hits(local);
+    const rule = safe ? llmRule! : local;
     const matches = state.txns.filter((x) => x.id !== t.id && x.dir === "debit" && ruleMatches({ ...rule, id: "", createdAt: "", hits: 0 }, x) && x.category !== category).length;
     const traceId = addTrace(`Correction: ${t.merchant} → ${category}`, [
       { agent: "Rule learner", action: "Captured user correction", detail: `${t.merchant}${t.vpa ? ` (${t.vpa})` : ""}: ${t.category} → ${category}` },

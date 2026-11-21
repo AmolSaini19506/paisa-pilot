@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CatIcon } from "@/components/Icons";
 import { useStore } from "@/lib/store";
 import { days, daysGainedOnGoal, goalsStuck, detectRecurring, inr } from "@/lib/twin";
@@ -15,8 +15,10 @@ export default function Subs() {
   const goa = state.goals.findIndex((g) => /goa/i.test(g.name));
 
   const [confirm, setConfirm] = useState<string | null>(null);
+  // one timer per armed confirmation; re-arming or unmounting clears the old one
+  useEffect(() => { if (!confirm) return; const t = setTimeout(() => setConfirm(null), 4000); return () => clearTimeout(t); }, [confirm]);
   const bury = (m: string, amt: number, due: string) => {
-    if (confirm !== m) { setConfirm(m); setTimeout(() => setConfirm((c) => (c === m ? null : c)), 4000); return; }
+    if (confirm !== m) { setConfirm(m); return; }
     setConfirm(null);
     update((s) => ({ ...s, cancelled: [...s.cancelled, m], memoryDiff: { at: new Date().toISOString(), lines: [`${m} marked for cancellation → ${inr(amt * 12)}/year freed`, `Reminder: cancel inside the app before the ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} renewal`] } }));
     toast(`RIP ${m}. Cancel it in the ${m} app before ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} and ${inr(amt * 12)}/year is yours again. Badge unlocked: Subscription Slayer`, "");
