@@ -1,0 +1,57 @@
+import { SEED_MAP } from "./categories";
+import type { CatSource, Rule, Txn } from "./types";
+
+export function ruleMatches(r: Rule, t: Pick<Txn, "vpa" | "merchant" | "raw">): boolean {
+  const v = (r.field === "vpa" ? t.vpa ?? "" : `${t.merchant} ${t.raw}`).toLowerCase();
+  const p = r.pattern.toLowerCase();
+  if (!v) return false;
+  if (r.type === "prefix") return r.field === "vpa" ? v.startsWith(p) : v.split(/\s+/).some((w) => w.startsWith(p));
+  if (r.type === "equals") return v === p;
+  return v.includes(p);
+}
+
+export function categorize(
+  t: Pick<Txn, "vpa" | "merchant" | "raw" | "dir">,
+  rules: Rule[],
+  memory: Map<string, string>,
+): { category: string; src: CatSource; conf: number; ruleId?: string } {
+  for (const r of rules) if (ruleMatches(r, t)) return { category: r.category, src: "rule", conf: 0.99, ruleId: r.id };
+  const mk = (t.vpa || t.merchant).toLowerCase();
+  const mem = memory.get(mk);
+  if (mem) return { category: mem, src: "memory", conf: 0.95 };
+  const text = `${t.merchant} ${t.vpa ?? ""} ${t.raw}`;
+  for (const [re, c] of SEED_MAP) if (re.test(text)) return { category: c, src: "seed", conf: 0.9 };
+  if (t.dir === "credit") return { category: "Refund", src: "seed", conf: 0.4 };
+  return { category: "Other", src: "seed", conf: 0.2 };
+}
+
+/** Merchant memory = user-confirmed merchant -> category pairs. */
+export function buildMemory(txns: Txn[]): Map<string, string> {
+  const m = new Map<string, string>();
+  for (const t of txns) if (t.src === "user") m.set((t.vpa || t.merchant).toLowerCase(), t.category);
+  return m;
+}
+
+/** Deterministic rule proposal (the LLM version refines/explains this). */
+export function proposeRule(t: Txn, category: string, all: Txn[]): Omit<Rule, "id" | "createdAt" | "hits"> & { matches: number } {
+  let cand: Omit<Rule, "id" | "createdAt" | "hits">;
+  if (t.vpa) {
+    const handle = t.vpa.split("@")[0];
+    const prefix = handle.replace(/[\d._-]+$/, "").replace(/\d+/g, "");
+    const usePrefix = prefix.length >= 4 && prefix !== handle;
+    cand = usePrefix
+      ? { field: "vpa", type: "prefix", pattern: prefix, category, why: `All UPI IDs starting with "${prefix}" look like the same kind of merchant` }
+      : { field: "vpa", type: "equals", pattern: t.vpa, category, why: `This exact UPI ID` };
+  } else {
+    const word = t.merchant.split(/\s+/)[0];
+    cand = { field: "merchant", type: "contains", pattern: word.toLowerCase(), category, why: `Merchant name contains "${word}"` };
+  }
+  const matches = all.filter((x) => x.dir === "debit" && ruleMatches({ ...cand, id: "", createdAt: "", hits: 0 }, x)).length;
+  return { ...cand, matches };
+}
+
+export function accuracy(txns: Txn[]): number {
+  const d = txns.filter((t) => t.dir === "debit");
+  if (!d.length) return 0;
+  return Math.round((d.filter((t) => t.category !== "Other" && !t.review).length / d.length) * 100);
+}
