@@ -1,8 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { TraceButton } from "@/components/Shell";
-import { CATEGORIES } from "@/lib/categories";
-import { CatIcon } from "@/components/Icons";
+import { CATEGORIES, catEmoji } from "@/lib/categories";
 import { accuracy, proposeRule, ruleMatches } from "@/lib/categorize";
 import { ai, useStore } from "@/lib/store";
 import type { Rule, Txn } from "@/lib/types";
@@ -45,7 +44,7 @@ export default function Txns() {
     ]);
     setThinking(null);
     if (matches > 0) setProp({ txn: t, category, rule, matches, traceId, llm: r.llm });
-    else toast(`Saved. I'll remember ${t.merchant} = ${category}`, "");
+    else toast(`Saved. I'll remember ${t.merchant} = ${category}`, "🧠");
   };
 
   const accept = () => {
@@ -67,7 +66,7 @@ export default function Txns() {
     });
     setFlash(changed);
     setTimeout(() => setFlash(new Set()), 1800);
-    toast(`Rule learned! ${prop.matches} past transactions updated`, "");
+    toast(`Rule learned! ${prop.matches} past transactions updated`, "🧩");
     setProp(null);
   };
 
@@ -75,18 +74,18 @@ export default function Txns() {
     <div className="grid" style={{ gap: 20 }}>
       <div className="row between wrap">
         <div>
-          <h1>Transactions</h1>
+          <h1>Transactions 🧾</h1>
           <p className="muted">Wrong category? Fix it once. I&apos;ll learn a rule and fix the rest.</p>
         </div>
         <div className="row wrap">
-          <div className="card" style={{ padding: "10px 14px", background: "var(--lime-wash)", color: "var(--ink)" }}>
-            <div className="small" style={{ fontWeight: 600 }}>Auto-categorised</div>
+          <div className="card" style={{ padding: "10px 14px", background: "var(--lime)", color: "#111" }}>
+            <div className="small" style={{ fontWeight: 700 }}>Auto-categorised</div>
             <div className="big" style={{ fontSize: 26 }}>
               {state.accuracy.after && state.accuracy.before !== state.accuracy.after ? <><span style={{ opacity: .5, fontSize: 18 }}>{state.accuracy.before}% →</span> </> : null}{acc}%
             </div>
           </div>
-          <div className="card" style={{ padding: "10px 14px", background: "var(--tint)" }}>
-            <div className="small" style={{ fontWeight: 600 }}>Rules learned</div>
+          <div className="card" style={{ padding: "10px 14px", background: "var(--pink)", color: "#111" }}>
+            <div className="small" style={{ fontWeight: 700 }}>Rules learned</div>
             <div className="big" style={{ fontSize: 26 }}>{state.rules.length}</div>
           </div>
         </div>
@@ -95,15 +94,15 @@ export default function Txns() {
       {prop && (
         <div className="card popin" style={{ background: "var(--purple)", color: "#fff", boxShadow: "var(--shadow-lg)" }}>
           <div className="row between wrap">
-            <h2>Wanna make it a rule?</h2>
+            <h2>🧩 Wanna make it a rule?</h2>
             <TraceButton id={prop.traceId} />
           </div>
           <p style={{ fontSize: 17 }}>
-            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b>{prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#fff", color: "#111", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b><CatIcon c={prop.category} />{prop.category}</b>
+            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b> {prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#fff", color: "#111", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b>{catEmoji(prop.category)} {prop.category}</b>
           </p>
           <p style={{ opacity: 0.9 }}>{prop.rule.why} {prop.llm ? "· proposed by the AI agent" : ""}</p>
           <div className="row wrap">
-            <button className="btn" onClick={accept}>Yes, fix {prop.matches} past ones</button>
+            <button className="btn" onClick={accept}>Yes, fix {prop.matches} past ones ✨</button>
             <button className="btn ghost" onClick={() => setProp(null)}>Just this one</button>
           </div>
         </div>
@@ -112,10 +111,10 @@ export default function Txns() {
       <div className="card">
         <div className="row wrap" style={{ marginBottom: 12, gap: 8 }}>
           <button className={`btn sm ${filter === "all" ? "" : "ghost"}`} onClick={() => setFilter("all")}>All ({state.txns.length})</button>
-          <button className={`btn sm ${filter === "review" ? "yellow" : "ghost"}`} onClick={() => setFilter("review")}>To review ({reviewCount})</button>
+          <button className={`btn sm ${filter === "review" ? "yellow" : "ghost"}`} onClick={() => setFilter("review")}>🕵️ To review ({reviewCount})</button>
           <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ width: "auto" }}>
             <option value="all">Any category</option>
-            {CATEGORIES.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+            {CATEGORIES.map((c) => <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>)}
           </select>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search merchant / UPI ID" style={{ maxWidth: 240 }} />
         </div>
@@ -130,13 +129,13 @@ export default function Txns() {
                     <b>{t.merchant}</b>
                     <div className="mono muted">{t.vpa ?? t.kind.toUpperCase()}</div>
                   </td>
-                  <td style={{ fontWeight: 600, color: t.dir === "credit" ? "var(--green)" : undefined }}>{t.dir === "credit" ? "+" : "-"}{inr(t.amount)}</td>
+                  <td style={{ fontWeight: 700, color: t.dir === "credit" ? "var(--green)" : undefined }}>{t.dir === "credit" ? "+" : "-"}{inr(t.amount)}</td>
                   <td>
                     <div className="row" style={{ gap: 6 }}>
-                      <select value={t.category} onChange={(e) => change(t, e.target.value)} style={{ padding: "5px 8px", fontSize: 13, width: "auto", background: t.review || t.category === "Other" ? "var(--purple)" : undefined, color: t.review || t.category === "Other" ? "#111" : undefined }}>
-                        {CATEGORIES.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                      <select value={t.category} onChange={(e) => change(t, e.target.value)} style={{ padding: "5px 8px", fontSize: 13, width: "auto", background: t.review || t.category === "Other" ? "var(--yellow)" : undefined, color: t.review || t.category === "Other" ? "#111" : undefined }}>
+                        {CATEGORIES.map((c) => <option key={c.name} value={c.name}>{c.emoji} {c.name}</option>)}
                       </select>
-                      {thinking === t.id && <span className="small">…</span>}
+                      {thinking === t.id && <span className="small">🧠…</span>}
                       {t.src === "rule" && <span className="chip pink" title="categorised by a learned rule">rule</span>}
                       {t.src === "llm" && <span className="chip purple">AI</span>}
                     </div>
@@ -147,7 +146,7 @@ export default function Txns() {
             </tbody>
           </table>
         </div>
-        {list.length >limit && <div style={{ textAlign: "center", marginTop: 12 }}><button className="btn sm ghost" onClick={() => setLimit(limit + 100)}>Show more ({list.length - limit})</button></div>}
+        {list.length > limit && <div style={{ textAlign: "center", marginTop: 12 }}><button className="btn sm ghost" onClick={() => setLimit(limit + 100)}>Show more ({list.length - limit})</button></div>}
       </div>
     </div>
   );

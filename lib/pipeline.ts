@@ -25,7 +25,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   parsed.forEach((p) => (kinds[p.smsKind] = (kinds[p.smsKind] ?? 0) + 1));
   st("Ingest", `Classified ${parsed.length} ${source.toUpperCase()} item(s) into kinds`, Object.entries(kinds).map(([k, v]) => `${k}:${v}`).join("  "));
   const good = parsed.filter((p) => p.ok);
-  parsed.filter((p) => p.smsKind === "otp" || p.smsKind === "promo").forEach((p) => skipped.push({ raw: p.raw, why: p.smsKind === "otp" ? "OTP, not a transaction " : "Promo spam " }));
+  parsed.filter((p) => p.smsKind === "otp" || p.smsKind === "promo").forEach((p) => skipped.push({ raw: p.raw, why: p.smsKind === "otp" ? "OTP, not a transaction 🙅" : "Promo spam 🗑️" }));
   const unknown = parsed.filter((p) => !p.ok && p.smsKind === "unknown");
   st("Ingest", `Regex templates matched ${good.length}/${parsed.length}`, unknown.length ? `${unknown.length} unmatched → LLM fallback` : "no LLM needed");
 
@@ -47,7 +47,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
     unknown.forEach((u, i) => {
       if (got.has(i)) return;
       const sl = parseStatementLine(u.raw);
-      if (sl) { good.push(sl); det++; } else skipped.push({ raw: u.raw, why: "Couldn't read this one " });
+      if (sl) { good.push(sl); det++; } else skipped.push({ raw: u.raw, why: "Couldn't read this one 🤔" });
     });
     if (det) st("Ingest", `Statement-row parser recovered ${det} line(s)`);
   }
@@ -58,7 +58,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   let dupes = 0;
   for (const p of good) {
     const k = dedupeKey({ amount: p.amount!, date: p.date!, ref: p.ref, dir: p.dir! });
-    if (seen.has(k)) { dupes++; skipped.push({ raw: p.raw, why: "Duplicate alert, merged " }); continue; }
+    if (seen.has(k)) { dupes++; skipped.push({ raw: p.raw, why: "Duplicate alert, merged ♻️" }); continue; }
     seen.add(k); fresh.push(p);
   }
   st("Ingest", `De-duplicated on ref/amount/date`, `${dupes} duplicate(s) merged`);
