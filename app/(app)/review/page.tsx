@@ -83,7 +83,7 @@ export default function Review() {
 
   const FIXED = ["Rent", "EMI", "SIP/Investments", "Family transfers", "Bills & utilities"];
   const top = s.top.find(([k]) => !FIXED.includes(k));
-  const wrappedBg = "#1b1530";
+  const wrappedBg = "#111114";
 
   return (
     <div className="grid stagger" style={{ gap: 22 }}>
@@ -118,7 +118,7 @@ export default function Review() {
             </div>
           </div>
           {review ? <div className="md popin" dangerouslySetInnerHTML={{ __html: md(review.text) }} /> : (
-            <p className="muted" style={{ marginTop: 20 }}>Hit generate. The Reviewer agent pulls stats, subscriptions and goal runway, then writes it in your coach voice ({state.voice === "roast" ? " roast" : " hype"}).</p>
+            <p className="muted" style={{ marginTop: 20 }}>Hit generate. The Reviewer agent pulls stats, subscriptions and goal runway, then writes it in your coach voice ({state.voice === "roast" ? "roast 🔥" : "hype 💜"}).</p>
           )}
         </div>
 
@@ -126,7 +126,7 @@ export default function Review() {
           <div id="wrapped" className="popin" style={{ background: wrappedBg, color: "#fff", border: "var(--line)", borderRadius: 24, boxShadow: "var(--shadow-lg)", padding: 22, aspectRatio: "4 / 5", display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
             <div className="row between"><span style={{ fontWeight: 600, fontFamily: "Bricolage Grotesque", fontSize: 20 }}>₹ Paisa Wrapped</span><span className="chip" style={{ background: "#111", color: "#fff", borderColor: "#fff" }}>{monthLabel(month)}</span></div>
             <div style={{ fontSize: 14, opacity: .9 }}>Your top category was</div>
-            <div style={{ fontFamily: "Bricolage Grotesque", fontWeight: 600, fontSize: 34, lineHeight: 1 }}>{top ? `$<CatIcon c={top[0]} />${top[0]}` : "—"}</div>
+            <div style={{ fontFamily: "Bricolage Grotesque", fontWeight: 600, fontSize: 34, lineHeight: 1 }}>{top ? top[0] : "—"}</div>
             <div style={{ fontSize: 14 }}>{top ? inr(top[1]) : ""}</div>
             <div style={{ background: "#ffffff22", borderRadius: 14, padding: 12, border: "2px solid #fff" }}>
               <div style={{ fontSize: 13 }}>Most-visited merchant</div>
