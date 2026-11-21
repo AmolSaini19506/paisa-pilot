@@ -34,12 +34,12 @@ export function parseAmount(s: string): number | undefined {
 }
 
 export function parseDate(s: string, fallback = TODAY): string {
-  let m = s.match(/(\d{1,2})[-/ ]([A-Za-z]{3})[A-Za-z]*[-/ ]?(\d{2,4})?/);
-  if (m && MONTHS[m[2].toLowerCase()]) {
-    const y = m[3] ? (m[3].length === 2 ? "20" + m[3] : m[3]) : fallback.slice(0, 4);
-    return `${y}-${MONTHS[m[2].toLowerCase()]}-${m[1].padStart(2, "0")}`;
+  for (const mm of s.matchAll(/\b(\d{1,2})[-/ ]([A-Za-z]{3})[A-Za-z]*[-/ ]?(\d{2,4})?/g)) {
+    if (!MONTHS[mm[2].toLowerCase()]) continue;
+    const y = mm[3] ? (mm[3].length === 2 ? "20" + mm[3] : mm[3]) : fallback.slice(0, 4);
+    return `${y}-${MONTHS[mm[2].toLowerCase()]}-${mm[1].padStart(2, "0")}`;
   }
-  m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  let m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
   if (m) {

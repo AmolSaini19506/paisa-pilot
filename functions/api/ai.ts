@@ -95,7 +95,7 @@ export async function onRequestPost(context: any) {
       step("Categorizer", `${items.length} merchants unknown to rules + memory + seed map`, "escalating to LLM in one batch");
       try {
         const out = await llm(FAST,
-          `You categorise Indian bank transactions. Allowed categories: ${CATS}. Small (<₹250) UPI payments to bharatpe/paytmqr/q-number VPAs are usually street food, chai or snacks -> "Snacks/Chai". Person-to-person UPI (ok* handles) with words like split/dinner -> "Dining out". Return ONLY JSON array [{"i":number,"category":string,"conf":0-1,"reason":"<=8 words"}].`,
+          `You categorise Indian bank transactions. Allowed categories: ${CATS}. Small (<₹250) UPI payments to bharatpe/paytmqr/q-number VPAs are usually street food, chai or snacks -> "Snacks/Chai". Person-to-person UPI (ok* handles) with words like split/dinner -> "Dining out". Transfers to own account (SELF) -> "Other". Only employer payroll credits are "Salary". Return ONLY JSON array [{"i":number,"category":string,"conf":0-1,"reason":"<=8 words"}].`,
           JSON.stringify(items));
         const res = json<any[]>(out);
         step("Categorizer", `LLM (${FAST}) labelled ${res.length}`, res.map((r) => `#${r.i}→${r.category} (${Math.round(r.conf * 100)}%)`).join(", "));
