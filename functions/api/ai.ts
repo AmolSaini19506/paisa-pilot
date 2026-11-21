@@ -61,8 +61,14 @@ function heurCategory(text: string): { category: string; conf: number; reason: s
 function fixFractions(text: string, sc: any) {
   const t = text.toLowerCase();
   const frac = /tihai|one[- ]third|a third|1\/3/.test(t) ? 33 : /aadha|aadhi|half|1\/2/.test(t) ? 50 : /chauthai|quarter|1\/4/.test(t) ? 25 : 0;
-  if (!frac) return sc;
   const out = { ...sc };
+  // Only keep levers the user actually mentioned
+  if (!/sip|invest|nivesh|mutual/.test(t)) out.extraSip = 0;
+  if (!/cancel|band|cult|gym|subscri|netflix|hotstar|spotify/.test(t)) out.cancelSubs = 0;
+  if (!/rent|kiraya/.test(t)) out.rentHike = 0;
+  if (!/hike|raise|increment|salary|appraisal/.test(t)) out.incomeHike = 0;
+  if (!/shop|amazon|myntra|flipkart/.test(t)) out.shoppingCut = 0;
+  if (!frac) return out;
   if (/swiggy|zomato|order|food|dining|khana/.test(t) && !/(\d+)\s*%/.test(t)) out.foodCut = frac;
   if (/chai|leak|snack/.test(t) && !/(\d+)\s*%/.test(t) && !/swiggy|zomato|order|food|dining|khana/.test(t)) out.leakCut = frac;
   return out;
