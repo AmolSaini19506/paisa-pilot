@@ -6,7 +6,7 @@ import Sheet from "@/components/Sheet";
 import { useStore } from "@/lib/store";
 import { monthLeft } from "@/lib/twin";
 import { setAccentBase } from "@/lib/accent";
-import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, LogOut, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
 
 const NAV: { href: string; label: string; short: string; icon: LucideIcon }[] = [
   { href: "/home", label: "Money Twin", short: "Twin", icon: LayoutDashboard },

@@ -2,9 +2,8 @@
 import Wrapped from "@/components/Wrapped";
 import { useState } from "react";
 import { TraceButton } from "@/components/Shell";
-import { CatIcon, GoalIcon } from "@/components/Icons";
 import { agentContext, ai, useStore } from "@/lib/store";
-import { asOfMonth, chaiLeakFor, detectRecurring, healthScore, inr, monthLabel, monthStats, simulate, BASE, etaLabel, tidyMoney } from "@/lib/twin";
+import { asOfMonth, chaiLeakFor, detectRecurring, inr, monthLabel, monthStats, simulate, BASE, etaLabel, tidyMoney } from "@/lib/twin";
 import type { AppState } from "@/lib/types";
 
 function md(s: string) {
@@ -67,7 +66,6 @@ export default function Review() {
   const [busy, setBusy] = useState(false);
   const [play, setPlay] = useState(false);
   const s = monthStats(state, month);
-  const hs = healthScore(state);
   const leak = chaiLeakFor(state, month);
   const review = state.review?.month === month ? state.review : null;
 
@@ -83,9 +81,6 @@ export default function Review() {
     setBusy(false);
   };
 
-  const FIXED = ["Rent", "EMI", "SIP/Investments", "Family transfers", "Bills & utilities"];
-  const top = s.top.find(([k]) => !FIXED.includes(k));
-  const wrappedBg = "#111114";
 
   return (
     <div className="grid stagger" style={{ gap: 22 }}>

@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 import Tilt from "@/components/Tilt";
-import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
-import { CalendarRange, Coffee, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
+import { CatIcon, GoalIcon } from "@/components/Icons";
+import { CalendarRange, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
 import { Num, useSpring } from "@/components/Motion";
 import { useStore } from "@/lib/store";
 import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, goalsStuck, healthScore, inr, nudges, simulate, BASE, days, etaLabel } from "@/lib/twin";
