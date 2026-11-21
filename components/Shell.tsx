@@ -4,7 +4,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sheet from "@/components/Sheet";
 import { useStore } from "@/lib/store";
-import { computeTwin, paceCheck } from "@/lib/twin";
 import { setAccentBase } from "@/lib/accent";
 import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, LogOut, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
 
@@ -77,12 +76,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   useEffect(() => { if (ready && !authed) router.replace("/"); }, [ready, authed, router]);
-  // Money left this month vs. the person's usual month: project this month's flexible spending from its pace.
-  const tw = computeTwin(state);
-  const pace = paceCheck(state);
-  const drift = pace.reduce((a, p) => a + (p.spent / (p.expected / p.avg || 1) - p.avg), 0);
-  const ratio = tw.surplus > 0 ? (tw.surplus - drift) / tw.surplus : 0.4;
-  useEffect(() => { setAccentBase(ratio); }, [ratio]);
+  // Lime is the resting colour everywhere. The mood colour only moves when a what-if changes the outlook.
+  useEffect(() => { setAccentBase(1); }, []);
   if (!ready || !authed) return <div style={{ padding: 40 }} className="display">loading the vibes…</div>;
   return (
     <div className="shell">
