@@ -2,8 +2,16 @@
 import { useEffect, useRef, useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
-import { Send } from "lucide-react";
+import { ArrowUpRight, Send } from "lucide-react";
+import { computeTwin, inr } from "@/lib/twin";
 import { agentContext, ai, useStore } from "@/lib/store";
+
+const SUGGEST = [
+  { e: "🏝️", t: "Can I afford Goa?", q: "Bhai, Goa trip affordable hai?" },
+  { e: "🍔", t: "Cut food delivery", q: "What if I cut Swiggy by a third?" },
+  { e: "🏠", t: "Rent is going up", q: "My rent is going up to ₹28k from March, remember that" },
+  { e: "📊", t: "Explain my month", q: "Explain my month in 3 lines" },
+];
 
 const PROMPTS = [
   "Bhai, Goa trip affordable hai?",
@@ -29,7 +37,7 @@ export default function Coach() {
     const r = await ai<{ text: string; guardrail: boolean; facts: { fact: string; date?: string }[] }>("coach", {
       messages: msgs.slice(-10).map((m) => ({ role: m.role, text: m.text })), ctx: agentContext(state), voice: state.voice,
     });
-    const reply = r.data?.text || "Oops, my brain lagged Try again?";
+    const reply = r.data?.text || "Oops, my brain lagged. Try again?";
     const facts = r.data?.facts ?? [];
     const steps = [...r.trace];
     if (facts.length) steps.push({ agent: "Coach", action: `Wrote ${facts.length} fact(s) to episodic memory`, detail: facts.map((f) => f.fact).join(" | ") });
@@ -43,53 +51,81 @@ export default function Coach() {
     setBusy(false);
   };
 
+  const tw = computeTwin(state);
+  const txCount = state.txns.length;
+  const rich = (t: string) => t.split(/(₹\s?[\d,]+(?:\.\d+)?(?:\s?(?:lakh|k|L))?|\d+\s?days?|\d{1,3}%)/g).map((p, k) => k % 2 ? <b key={k} className="num-hl">{p}</b> : p);
+
   return (
-    <div className="grid stagger" style={{ gap: 18, maxWidth: 860 }}>
-      <div className="row between wrap">
-        <div>
-          <h1>Coach</h1>
-          <p className="muted">Ask anything, English or Hinglish. Every number comes from your Money Twin.</p>
+    <div className="coach">
+      <header className="coach-head">
+        <div className="row" style={{ gap: 12 }}>
+          <div className="coach-avatar" aria-hidden>✈️</div>
+          <div>
+            <div className="coach-name">Pilot <span className="live-dot" aria-hidden /></div>
+            <div className="muted small">Your money coach · reads all {txCount} transactions · Hinglish is fine</div>
+          </div>
         </div>
         <div className="seg" role="radiogroup" aria-label="Coach voice" style={{ minWidth: 220 }}>
           <button role="radio" aria-checked={state.voice === "roast"} onClick={() => update((s) => ({ ...s, voice: "roast" }))}>🔥 Roast me</button>
           <button role="radio" aria-checked={state.voice === "hype"} onClick={() => update((s) => ({ ...s, voice: "hype" }))}>💜 Hype me</button>
         </div>
+      </header>
+
+      <div className="coach-context">
+        <span>Left this month <b>{inr(tw.surplus)}</b></span>
+        <span>Buffer <b>{tw.efMonths.toFixed(1)} mo</b></span>
+        <span>Goals <b>{state.goals.length}</b></span>
+        <span>Memories <b>{state.facts.length}</b></span>
+        {state.chat.length > 0 && <button className="link-btn" onClick={() => update((s) => ({ ...s, chat: [] }))}>New chat</button>}
       </div>
 
-      <div className="card" style={{ minHeight: 380, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="thread">
         {state.chat.length === 0 && (
-          <div style={{ textAlign: "center", padding: "30px 10px" }}>
-                        <div className="sticker-emoji" style={{ width: 64, height: 64, fontSize: 34, borderRadius: 20, margin: "0 auto 14px" }}>🤙</div>
-            <h3>What&apos;s the money question, {state.profile.name}?</h3>
-            <p className="muted small">I can check spends, run what-ifs, and remember life stuff. I won&apos;t give stock tips though, I&apos;m not your WhatsApp uncle</p>
+          <div className="coach-empty">
+            <h2 style={{ fontSize: 26 }}>What&apos;s the money question, {state.profile.name}?</h2>
+            <p className="muted">I check your real spends, run what-ifs and remember life stuff. No stock tips, I&apos;m not your WhatsApp uncle.</p>
+            <div className="suggest">
+              {SUGGEST.map((p) => (
+                <button key={p.q} className="suggest-item" onClick={() => send(p.q)}>
+                  <span className="suggest-emoji">{p.e}</span>
+                  <span><b>{p.t}</b><span className="muted small">{p.q}</span></span>
+                  <ArrowUpRight size={16} className="suggest-arrow" />
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        {state.chat.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "bubble-user" : "bubble-ai"} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "82%" }}>
-            <div style={{
-              background: m.role === "user" ? "var(--purple)" : m.guardrail ? "color-mix(in srgb, var(--red) 14%, var(--card))" : "var(--bg)",
-              color: m.role === "user" ? "var(--accent-ink)" : "var(--ink)", border: "var(--line)", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-              padding: "10px 14px", boxShadow: "none", whiteSpace: "pre-wrap", lineHeight: 1.5,
-            }}>
-              {m.guardrail && <div className="chip red" style={{ marginBottom: 6 }}>guardrail: no stock tips</div>}
-              {m.text}
+        {state.chat.map((m, i) => m.role === "user" ? (
+          <div key={i} className="msg-user bubble-user">{m.text}</div>
+        ) : (
+          <div key={i} className="msg-ai bubble-ai">
+            <div className="coach-avatar sm" aria-hidden>✈️</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="msg-meta">Pilot{m.guardrail && <span className="guard">🛡️ Guardrail · no stock tips</span>}</div>
+              <div className="msg-body">{rich(m.text)}</div>
+              {m.traceId && <div style={{ marginTop: 8 }}><TraceButton id={m.traceId} /></div>}
             </div>
-            {m.traceId && <div style={{ marginTop: 6 }}><TraceButton id={m.traceId} /></div>}
           </div>
         ))}
-        {busy && <div className="small muted">thinking… checking your Twin, running numbers</div>}
+        {busy && (
+          <div className="msg-ai bubble-ai">
+            <div className="coach-avatar sm" aria-hidden>✈️</div>
+            <div className="typing"><i /><i /><i /><span className="muted small">checking your Twin, running numbers</span></div>
+          </div>
+        )}
         <div ref={end} />
       </div>
 
-      <div className="row wrap" style={{ gap: 6 }}>
-        {PROMPTS.map((p) => <button key={p} className="chip" style={{ cursor: "pointer" }} onClick={() => send(p)}>{p}</button>)}
+      <div className="composer-wrap">
+        {state.chat.length > 0 && (
+          <div className="quick-asks">{PROMPTS.map((p) => <button key={p} onClick={() => send(p)}>{p}</button>)}</div>
+        )}
+        <form className="composer" onSubmit={(e) => { e.preventDefault(); send(input); }}>
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask Pilot anything, or tap the mic" aria-label="Message Pilot" />
+          <MicButton onText={setInput} onFinal={(t) => send(t)} />
+          <button className="send-btn" disabled={busy || !input.trim()} aria-label="Send"><Send size={18} /></button>
+        </form>
       </div>
-      <form className="row wrap chatbar" onSubmit={(e) => { e.preventDefault(); send(input); }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask, or tap the mic to speak" style={{ flex: "1 1 240px" }} />
-        <MicButton onText={setInput} onFinal={(t) => send(t)} />
-        <button className="btn" disabled={busy}><Send size={16} />Send</button>
-      </form>
-      {state.chat.length > 0 && <button className="btn sm ghost" style={{ justifySelf: "start" }} onClick={() => update((s) => ({ ...s, chat: [] }))}>clear chat</button>}
     </div>
   );
 }

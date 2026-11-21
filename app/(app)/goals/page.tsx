@@ -1,7 +1,7 @@
 "use client";
 import { GoalIcon } from "@/components/Icons";
 import { useEffect, useState } from "react";
-import { setAccentOverride } from "@/lib/accent";
+import { accentFor, setAccentOverride } from "@/lib/accent";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
@@ -120,13 +120,13 @@ export default function Goals() {
             <div style={{ height: 260, marginTop: 8 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={proj.series} margin={{ left: 10, right: 10, top: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#8884" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} interval={3} />
                   <YAxis tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} tick={{ fontSize: 11 }} width={50} />
                   <Tooltip formatter={(v: any) => inr(+v)} />
                   <Legend />
-                  <Line type="monotone" dataKey="base" name="Current path" stroke="#9a9a9a" strokeWidth={3} strokeDasharray="6 4" dot={false} />
-                  <Line type="monotone" dataKey="scenario" name="Your what-if" stroke="#7b5cff" strokeWidth={4} dot={false} />
+                  <Line type="monotone" dataKey="base" name="Current path" stroke="#6b6b75" strokeWidth={2} strokeDasharray="6 4" dot={false} />
+                  <Line type="monotone" dataKey="scenario" name="Your what-if" stroke={accentFor(proj.surplus).accent} strokeWidth={4} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

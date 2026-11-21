@@ -128,7 +128,7 @@ export default function Home() {
       </div>
 
       <div className="grid g2">
-        <div className="card">
+        <section className="open">
           <div className="row between"><h2><span className="sticker-emoji">👀</span> Nudges</h2><button className="trace-btn" onClick={() => openTrace("all")}>Agent runs</button></div>
           <div style={{ marginTop: 8 }}>
             {ns.map((n, i) => (
@@ -138,7 +138,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
         <div className="card">
           <div className="row between"><h2><span className="sticker-emoji">🏝️</span> Goals runway</h2><Link href="/goals" className="btn sm ghost">What-if</Link></div>
           {proj.goals.map(({ goal, eta, onTrack }) => (
@@ -152,7 +152,7 @@ export default function Home() {
       </div>
 
       <div className="grid g2">
-        <div className="card">
+        <section className="open">
           <h2><span className="sticker-emoji">💸</span> Where it goes</h2>
           <div className="small muted" style={{ marginTop: 2 }}>Average per month</div>
           <div style={{ marginTop: 12 }}>
@@ -163,8 +163,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-        <div className="card">
+        </section>
+        <section className="open">
           <div className="row between wrap"><h2><span className="sticker-emoji">🧠</span> What I remember about you</h2></div>
           <div className="small muted" style={{ marginTop: 2 }}>Episodic memory, used by the planner and nudges</div>
           <div style={{ marginTop: 8 }}>
@@ -177,7 +177,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
