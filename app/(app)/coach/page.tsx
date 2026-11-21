@@ -68,7 +68,7 @@ export default function Coach() {
           <div key={i} className={m.role === "user" ? "bubble-user" : "bubble-ai"} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "82%" }}>
             <div style={{
               background: m.role === "user" ? "var(--purple)" : m.guardrail ? "color-mix(in srgb, var(--red) 14%, var(--card))" : "var(--bg)",
-              color: m.role === "user" ? "#fff" : "var(--ink)", border: "var(--line)", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+              color: m.role === "user" ? "#0b0b0b" : "var(--ink)", border: "var(--line)", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
               padding: "10px 14px", boxShadow: "none", whiteSpace: "pre-wrap", lineHeight: 1.5,
             }}>
               {m.guardrail && <div className="chip red" style={{ marginBottom: 6 }}>guardrail: no stock tips</div>}

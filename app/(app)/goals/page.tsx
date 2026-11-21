@@ -131,7 +131,7 @@ export default function Goals() {
         </div>
       </div>
 
-      <div className="card" style={{ background: "var(--purple)", color: "#fff" }}>
+      <div className="card" style={{ background: "var(--purple)", color: "#0b0b0b" }}>
         <div className="row between wrap">
           <div>
             <h2>Letter from Future You (2030)</h2>

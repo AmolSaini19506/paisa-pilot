@@ -93,13 +93,13 @@ export default function Txns() {
       </div>
 
       {prop && (
-        <div className="card popin" style={{ background: "var(--purple)", color: "#fff", boxShadow: "var(--shadow-lg)" }}>
+        <div className="card popin" style={{ background: "var(--purple)", color: "#0b0b0b", boxShadow: "var(--shadow-lg)" }}>
           <div className="row between wrap">
             <h2>Wanna make it a rule?</h2>
             <TraceButton id={prop.traceId} />
           </div>
           <p style={{ fontSize: 17 }}>
-            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b>{prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#fff", color: "#111", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b><CatIcon c={prop.category} />{prop.category}</b>
+            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b>{prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#0b0b0b", color: "#d4ff3a", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b><CatIcon c={prop.category} />{prop.category}</b>
           </p>
           <p style={{ opacity: 0.9 }}>{prop.rule.why} {prop.llm ? "· proposed by the AI agent" : ""}</p>
           <div className="row wrap">
