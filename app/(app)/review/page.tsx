@@ -52,7 +52,7 @@ ${roast ? `${monthLabel(month)} was giving "I deserve this" energy.` : `${monthL
 ${recs.map((r) => `- ${r.merchant}: ${r.note}`).join("\n") || "- All subscriptions look used and stable"}
 
 ## Goal runway
-${proj.goals.map((g) => `- $<GoalIcon id={g.goal.id} />${g.goal.name}: ${g.onTrack ? "on track" : "running late"} (ETA ${new Date(g.eta).toLocaleDateString("en-IN", { month: "short", year: "numeric" })})`).join("\n")}
+${proj.goals.map((g) => `- ${g.goal.name}: ${g.onTrack ? "on track" : "running late"} (ETA ${new Date(g.eta).toLocaleDateString("en-IN", { month: "short", year: "numeric" })})`).join("\n")}
 
 ## Next month's 3 moves
 1. Cap food delivery at 9 orders (≈ ₹1,500 saved → Goa ~12 days sooner)

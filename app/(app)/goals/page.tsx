@@ -43,7 +43,7 @@ export default function Goals() {
     const next = { ...BASE, ...(r.data ?? {}) };
     setSc(next);
     const p = simulate(state, next);
-    const lines = p.goals.map((g) => `$<GoalIcon id={g.goal.id} />${g.goal.name}: ${g.deltaDays >= 0 ? `${g.deltaDays} days sooner` : `${-g.deltaDays} days later`} (ETA ${fmtD(g.eta)})`);
+    const lines = p.goals.map((g) => `${g.goal.name}: ${g.deltaDays >= 0 ? `${g.deltaDays} days sooner` : `${-g.deltaDays} days later`} (ETA ${fmtD(g.eta)})`);
     const id = addTrace(`What-if: "${nl}"`, [
       ...r.trace,
       { agent: "Planner", action: "simulate() — 24-month cash projection", detail: `monthly surplus ${inr(base.surplus)} → ${inr(p.surplus)}` },
