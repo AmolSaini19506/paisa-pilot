@@ -5,7 +5,7 @@ import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
 import { CalendarRange, Coffee, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
 import { Num, useSpring } from "@/components/Motion";
 import { useStore } from "@/lib/store";
-import { avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE } from "@/lib/twin";
+import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE } from "@/lib/twin";
 
 function Ring({ score: target }: { score: number }) {
   const score = useSpring(target, 0.9);
@@ -23,6 +23,7 @@ function Ring({ score: target }: { score: number }) {
 export default function Home() {
   const { state, openTrace } = useStore();
   const tw = computeTwin(state);
+  const ml = monthLeft(state);
   const hs = healthScore(state);
   const ns = nudges(state);
   const leak = chaiLeak(state);
@@ -51,8 +52,8 @@ export default function Home() {
             <span className="mc-label">Left to spend this month</span>
             <span className="mc-brand">paisa<b>pilot</b></span>
           </div>
-          <div className="mc-amount"><Num value={tw.surplus} format={inr} /></div>
-          <div className="mc-sub">after rent, EMI, SIPs and bills · {Math.round((tw.fixed / tw.income) * 100)}% of salary is locked</div>
+          <div className="mc-amount"><Num value={ml.projected} format={inr} /></div>
+          <div className="mc-sub">projected at this month's pace · you usually have {inr(ml.usual)} left</div>
           <div className="mc-foot">
             <div><span>In</span><b><Num value={tw.income} format={inr} /></b></div>
             <div><span>Fixed</span><b><Num value={tw.fixed} format={inr} /></b></div>

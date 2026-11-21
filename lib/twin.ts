@@ -300,3 +300,11 @@ export function monthStats(state: AppState, month: string) {
   const biggest = ms.filter((t) => t.dir === "debit" && !["Rent", "SIP/Investments", "Family transfers", "EMI", "Bills & utilities"].includes(t.category)).sort((a, b) => b.amount - a.amount)[0];
   return { month, inc, out, saved: inc - out, cats, avg, top, topMerchant, biggest, count: ms.length };
 }
+
+/** This month's projected money left vs. the person's usual month. Drives both the money card and the mood colour. */
+export function monthLeft(state: AppState) {
+  const usual = computeTwin(state).surplus;
+  const drift = paceCheck(state).reduce((a, p) => a + ((p.spent * p.avg) / (p.expected || 1) - p.avg), 0);
+  const projected = Math.round(usual - drift);
+  return { usual, projected, ratio: usual > 0 ? projected / usual : 0.4 };
+}
