@@ -13,9 +13,9 @@ India-first agentic money coach built for the Product Space Agentic AI Hackathon
 - Every agent step is logged and viewable ("How I got this")
 
 ## Stack
-Next.js (static export) on Cloudflare Pages, Pages Functions in `functions/api`, Cloudflare Workers AI (Llama 3.x) via the `AI` binding in `wrangler.toml`. Built-in fallbacks keep everything working if the AI is unavailable.
+Next.js (static export) served by a Cloudflare Worker with static assets (`worker.ts`), API handlers in `functions/api`, Cloudflare Workers AI (Llama 3.x) via the `AI` binding in `wrangler.toml`. Built-in fallbacks keep everything working if the AI is unavailable.
 
 ## Deploy
-Cloudflare → Workers & Pages → Create → Pages → Connect to Git → this repo. Framework preset: None. Build command: `npm run build`. Output directory: `out`.
+Cloudflare Workers Builds connected to this repo. Build command `npm run build`, deploy command `npx wrangler deploy`.
 
 Judge login: `judge@paisapilot.app` / `chai2026` (demo data, stored in the browser).
