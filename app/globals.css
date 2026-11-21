@@ -71,7 +71,7 @@ button { font-family: inherit; }
 .btn.sm { padding: 6px 12px; font-size: 13px; }
 .btn:disabled { opacity: .55; cursor: wait; }
 
-.chip { display: inline-flex; align-items: center; gap: 5px; border: 2px solid var(--ink); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; background: var(--card); white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 2px solid var(--ink); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; background: var(--card); color: var(--ink); white-space: nowrap; }
 .chip.lime { background: var(--lime); color: #111; } .chip.pink { background: var(--pink); color: #111; } .chip.yellow { background: var(--yellow); color: #111; } .chip.red { background: var(--red); color: #fff; } .chip.cyan { background: var(--cyan); color: #111; } .chip.purple { background: var(--purple); color: #fff; }
 
 input, select, textarea { font-family: inherit; font-size: 15px; border: var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card); color: var(--ink); width: 100%; }
