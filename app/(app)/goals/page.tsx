@@ -35,7 +35,7 @@ export default function Goals() {
   const [letterBusy, setLetterBusy] = useState<string | null>(null);
   const proj = simulate(state, sc);
   const base = simulate(state, BASE);
-  const moodRatio = base.surplus > 0 ? proj.surplus / base.surplus : 0.4;
+  const moodRatio = base.usual > 0 ? proj.surplus / base.usual : 0.4;
   useEffect(() => { setAccentOverride(moodRatio); }, [moodRatio]);
   useEffect(() => () => setAccentOverride(null), []);
   const changed = JSON.stringify(sc) !== JSON.stringify(BASE);
@@ -98,7 +98,7 @@ export default function Goals() {
             </div>
           ))}
           <div className="card" style={{ marginTop: 16, padding: 12, background: "var(--lime-wash)", color: "var(--ink)", boxShadow: "none" }}>
-            Monthly surplus: <b>{inr(base.surplus)}</b> → <b>{inr(proj.surplus)}</b>
+            Left each month at this pace: <b>{inr(base.surplus)}</b> → <b>{inr(proj.surplus)}</b>
           </div>
           <p className="small muted" style={{ marginTop: 10 }}>Modelling only. Paisa Pilot doesn&apos;t recommend specific investments.</p>
         </div>

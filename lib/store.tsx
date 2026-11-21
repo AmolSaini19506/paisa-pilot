@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { initialState } from "./seed";
 import type { AppState, Trace, TraceStep } from "./types";
-import { avgByCategory, byCategory, chaiLeak, computeTwin, detectRecurring, healthScore } from "./twin";
+import { avgByCategory, byCategory, chaiLeak, computeTwin, detectRecurring, healthScore, monthLeft } from "./twin";
 
 const KEY = "paisa-pilot-v3";
 const AUTH = "paisa-pilot-auth";
@@ -105,7 +105,7 @@ export function agentContext(state: AppState) {
     twin: {
       name: state.profile.name, city: state.profile.city, income: twin.income, fixed: Math.round(twin.fixed),
       fixedItems: twin.fixedItems.map((f) => ({ ...f, amount: Math.round(f.amount) })),
-      variable: Math.round(twin.variable), surplus: Math.round(twin.surplus), efMonths: +twin.efMonths.toFixed(1),
+      variable: Math.round(twin.variable), surplus: monthLeft(state).projected, usualSurplus: Math.round(twin.surplus), efMonths: +twin.efMonths.toFixed(1),
       emergencyFund: state.profile.emergencyFund, healthScore: hs.score,
       goals: state.goals, memoryFacts: state.facts.map((f) => f.text),
       recurring: detectRecurring(state).map((r) => ({ merchant: r.merchant, amount: r.last, status: r.status, note: r.note })),

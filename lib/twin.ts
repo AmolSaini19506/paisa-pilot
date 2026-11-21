@@ -177,11 +177,15 @@ export function etaLabel(g: { eta: string; never: boolean }, day = false): strin
 export interface Projection {
   goals: { goal: Goal; eta: string; never: boolean; onTrack: boolean; deltaDays: number; monthly: number }[];
   surplus: number;
+  usual: number;
   series: { month: string; base: number; scenario: number }[];
 }
 
 export function simulate(state: AppState, sc: Scenario, withFacts = true): Projection {
   const tw = computeTwin(state);
+  const left = monthLeft(state);
+  // same number Home shows: this month's pace, not the 3-month average
+  const monthly = left.projected;
   const avg = avgByCategory(state.txns);
   const leak = chaiLeak(state).monthly;
   const rent = avg["Rent"] ?? 0;
@@ -200,7 +204,7 @@ export function simulate(state: AppState, sc: Scenario, withFacts = true): Proje
     let cum = 0;
     for (let i = 0; i < 24; i++) {
       const d = addMonths(TODAY, i);
-      const s = tw.surplus + extra - (d >= "2027-03-01" ? rent * (hike / 100) : 0);
+      const s = monthly + extra - (d >= "2027-03-01" ? rent * (hike / 100) : 0);
       cum += Math.max(s, 0);
       series.push(cum);
     }
@@ -230,7 +234,7 @@ export function simulate(state: AppState, sc: Scenario, withFacts = true): Proje
     };
   });
   return {
-    goals, surplus: tw.surplus + delta,
+    goals, surplus: monthly + delta, usual: left.usual,
     series: baseSeries.map((b, i) => ({ month: monthLabel(addMonths(TODAY, i).slice(0, 7)), base: Math.round(b), scenario: Math.round(scSeries[i]) })),
   };
 }
@@ -238,8 +242,7 @@ export function simulate(state: AppState, sc: Scenario, withFacts = true): Proje
 /** days a goal moves if `monthly` rupees/month are freed */
 export function daysGainedOnGoal(state: AppState, goalIdx: number, monthly: number) {
   const g = state.goals[goalIdx];
-  const tw = computeTwin(state);
-  const alloc = Math.max(tw.surplus * g.weight, 1);
+  const alloc = Math.max(monthLeft(state).projected * g.weight, 1);
   const need = g.target - g.saved;
   const m1 = need / alloc, m2 = need / (alloc + monthly * g.weight);
   return Math.round((m1 - m2) * 30.44);

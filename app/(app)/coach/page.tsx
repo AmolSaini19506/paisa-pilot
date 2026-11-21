@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
 import { ArrowUpRight, Send } from "lucide-react";
-import { computeTwin, inr, tidyMoney } from "@/lib/twin";
+import { computeTwin, inr, monthLeft, tidyMoney } from "@/lib/twin";
 import { agentContext, ai, useStore } from "@/lib/store";
 
 const SUGGEST = [
@@ -72,7 +72,7 @@ export default function Coach() {
       </header>
 
       <div className="coach-context">
-        <span>Left this month <b>{inr(tw.surplus)}</b></span>
+        <span>Left this month <b>{inr(monthLeft(state).projected)}</b></span>
         <span>Buffer <b>{tw.efMonths.toFixed(1)} mo</b></span>
         <span>Goals <b>{state.goals.length}</b></span>
         <span>Memories <b>{state.facts.length}</b></span>

@@ -2,7 +2,7 @@ import { buildMemory, categorize } from "./categorize";
 import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, redactRaw, TODAY, type ParsedSms } from "./parser";
 import { ai } from "./store";
 import type { AppState, TraceStep, Txn } from "./types";
-import { computeTwin, detectRecurring, inr } from "./twin";
+import { detectRecurring, inr, monthLeft } from "./twin";
 
 export interface IngestResult {
   added: Txn[];
@@ -97,7 +97,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
 
   // 5. Twin diff
   const after: AppState = { ...state, txns: [...txns, ...state.txns] };
-  const before = computeTwin(state), now = computeTwin(after);
+  const before = monthLeft(state).projected, now = monthLeft(after).projected;
   const diff: string[] = [`+${txns.length} transactions from ${source.toUpperCase()} (${skipped.length} skipped: OTPs, promos, duplicates)`];
   const recB = new Set(detectRecurring(state).filter((r) => r.status !== "active").map((r) => r.merchant + r.status));
   for (const r of detectRecurring(after)) if (r.status !== "active" && !recB.has(r.merchant + r.status)) diff.push(`Subscription alert: ${r.merchant} — ${r.note}`);
@@ -105,7 +105,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   if (llmRows.length) diff.push(`AI categorised ${llmRows.length} new merchant(s): ${llmRows.slice(0, 3).map((t) => `${t.merchant} → ${t.category}`).join(", ")}`);
   const review = txns.filter((t) => t.review).length;
   if (review) diff.push(`${review} low-confidence row(s) sent to "To review" — fix one and I'll learn a rule`);
-  if (Math.abs(now.surplus - before.surplus) > 1) diff.push(`Surplus estimate ${inr(before.surplus)} → ${inr(now.surplus)}`);
+  if (Math.abs(now - before) > 1) diff.push(`Money left this month ${inr(before)} → ${inr(now)}`);
   st("Twin builder", "Updated Money Twin + wrote memory diff", diff.join(" | "));
 
   // privacy: never keep the full SMS (balances, account numbers)
