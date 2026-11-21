@@ -86,7 +86,7 @@ export default function Review() {
   const wrappedBg = "#1b1530";
 
   return (
-    <div className="grid" style={{ gap: 22 }}>
+    <div className="grid stagger" style={{ gap: 22 }}>
       <div className="row between wrap">
         <div>
           <h1>Monthly Review</h1>

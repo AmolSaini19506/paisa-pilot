@@ -72,7 +72,7 @@ export default function Txns() {
   };
 
   return (
-    <div className="grid" style={{ gap: 20 }}>
+    <div className="grid stagger" style={{ gap: 20 }}>
       <div className="row between wrap">
         <div>
           <h1>Transactions</h1>

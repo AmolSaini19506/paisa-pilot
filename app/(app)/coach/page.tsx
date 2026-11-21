@@ -44,7 +44,7 @@ export default function Coach() {
   };
 
   return (
-    <div className="grid" style={{ gap: 18, maxWidth: 860 }}>
+    <div className="grid stagger" style={{ gap: 18, maxWidth: 860 }}>
       <div className="row between wrap">
         <div>
           <h1>Coach</h1>
@@ -64,7 +64,7 @@ export default function Coach() {
           </div>
         )}
         {state.chat.map((m, i) => (
-          <div key={i} className="popin" style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "82%" }}>
+          <div key={i} className={m.role === "user" ? "bubble-user" : "bubble-ai"} style={{ alignSelf: m.role === "user" ? "flex-end" : "flex-start", maxWidth: "82%" }}>
             <div style={{
               background: m.role === "user" ? "var(--purple)" : m.guardrail ? "color-mix(in srgb, var(--red) 14%, var(--card))" : "var(--bg)",
               color: m.role === "user" ? "#fff" : "var(--ink)", border: "var(--line)", borderRadius: m.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",

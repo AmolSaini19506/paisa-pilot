@@ -2,17 +2,19 @@
 import Link from "next/link";
 import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
 import { Coffee, Inbox, MessageCircle } from "lucide-react";
+import { Num, useSpring } from "@/components/Motion";
 import { useStore } from "@/lib/store";
 import { avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE } from "@/lib/twin";
 
-function Ring({ score }: { score: number }) {
+function Ring({ score: target }: { score: number }) {
+  const score = useSpring(target, 0.9);
   const r = 44, c = 2 * Math.PI * r;
   const color = score >= 70 ? "var(--lime)" : score >= 50 ? "var(--purple)" : "var(--red)";
   return (
     <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label={`Money health ${score} of 100`} style={{ flexShrink: 0 }}>
       <circle cx="52" cy="52" r={r} fill="none" stroke="var(--hair)" strokeWidth="8" />
-      <circle cx="52" cy="52" r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${(score / 100) * c} ${c}`} transform="rotate(-90 52 52)" strokeLinecap="round" style={{ transition: "stroke-dasharray .8s cubic-bezier(.22,1,.36,1)" }} />
-      <text x="52" y="58" textAnchor="middle" fontFamily="Bricolage Grotesque" fontWeight="500" fontSize="28" fill="var(--ink)">{score}</text>
+      <circle cx="52" cy="52" r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${(score / 100) * c} ${c}`} transform="rotate(-90 52 52)" strokeLinecap="round" />
+      <text x="52" y="58" textAnchor="middle" fontFamily="Bricolage Grotesque" fontWeight="500" fontSize="28" fill="var(--ink)">{Math.round(score)}</text>
     </svg>
   );
 }
@@ -31,7 +33,7 @@ export default function Home() {
   const vibeLine = hs.score >= 70 ? "You're kinda thriving, ngl" : hs.score >= 50 ? "Mid but fixable. We move." : "Okay, we need to talk";
 
   return (
-    <div className="grid" style={{ gap: 20 }}>
+    <div className="grid stagger" style={{ gap: 20 }}>
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 16 }}>
         <div>
           <div className="muted small">Sat 21 Nov · Bengaluru · {roast ? "Roast mode" : "Hype mode"}</div>
@@ -56,9 +58,9 @@ export default function Home() {
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="grid stats" style={{ gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 0 }}>
           {[
-            { k: "Monthly income", v: inr(tw.income), s: "Salary on the 1st" },
-            { k: "Fixed costs", v: inr(tw.fixed), s: `${Math.round((tw.fixed / tw.income) * 100)}% of income` },
-            { k: "Monthly surplus", v: inr(tw.surplus), s: "Left to fund goals" },
+            { k: "Monthly income", v: <Num value={tw.income} format={inr} />, s: "Salary on the 1st" },
+            { k: "Fixed costs", v: <Num value={tw.fixed} format={inr} />, s: `${Math.round((tw.fixed / tw.income) * 100)}% of income` },
+            { k: "Monthly surplus", v: <Num value={tw.surplus} format={inr} />, s: "Left to fund goals" },
             { k: "Emergency buffer", v: `${tw.efMonths.toFixed(1)} months`, s: `${inr(state.profile.emergencyFund)} of 6-month target` },
           ].map((c, i) => (
             <div key={c.k} style={{ padding: "16px 20px", borderLeft: i ? "1px solid var(--hair)" : "none" }}>
@@ -74,7 +76,7 @@ export default function Home() {
         <div className="card leak">
           <div className="row between"><h2><Ico i={Coffee} /> The Chai Leak</h2><span className="chip">{leak.count} small UPIs a month</span></div>
           <div className="row" style={{ alignItems: "baseline", gap: 10, marginTop: 14 }}>
-            <span className="display" style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.03em", color: "var(--purple)" }}>{inr(leak.perDay)}</span>
+            <span className="display" style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.03em", color: "var(--purple)" }}><Num value={leak.perDay} format={inr} /></span>
             <span className="muted">a day</span>
           </div>
           <div className="small muted">{inr(leak.monthly)} a month in payments under ₹250 you never think about</div>

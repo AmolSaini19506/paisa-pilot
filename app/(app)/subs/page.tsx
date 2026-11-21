@@ -19,7 +19,7 @@ export default function Subs() {
   };
 
   return (
-    <div className="grid" style={{ gap: 22 }}>
+    <div className="grid stagger" style={{ gap: 22 }}>
       <div className="row between wrap">
         <div>
           <h1>Subscriptions</h1>

@@ -65,7 +65,7 @@ export default function Goals() {
   };
 
   return (
-    <div className="grid" style={{ gap: 22 }}>
+    <div className="grid stagger" style={{ gap: 22 }}>
       <div>
         <h1>Goals & What-if</h1>
         <p className="muted">Move a slider or just type it. Every goal date reacts live. Rent hike from memory is already priced in</p>

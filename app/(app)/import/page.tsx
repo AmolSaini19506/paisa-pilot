@@ -57,7 +57,7 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="grid" style={{ gap: 22 }}>
+    <div className="grid stagger" style={{ gap: 22 }}>
       <div>
         <h1>Feed me your mess</h1>
         <p className="muted">Bank SMS, UPI alerts, CSV exports, PDF statements. HDFC, ICICI, SBI, Axis, Kotak — Rs, INR, ₹, lakhs, OTP spam, duplicate alerts. I&apos;ll sort it.</p>

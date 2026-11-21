@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Sheet from "@/components/Sheet";
 import { useStore } from "@/lib/store";
 import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, LogOut, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
 
@@ -29,33 +30,41 @@ export function TraceButton({ id, label = "How I got this" }: { id?: string; lab
 
 function TraceDrawer() {
   const { state, traceOpen, openTrace } = useStore();
-  if (!traceOpen) return null;
-  const list = traceOpen === "all" ? state.traces : state.traces.filter((t) => t.id === traceOpen);
+  const [last, setLast] = useState<string | null>(null);
+  useEffect(() => { if (traceOpen) setLast(traceOpen); }, [traceOpen]);
+  const which = traceOpen ?? last;
+  const list = which === "all" ? state.traces : state.traces.filter((t) => t.id === which);
   return (
-    <>
-      <div className="drawer-bg" onClick={() => openTrace(null)} />
-      <div className="drawer">
-        <div className="row between" style={{ marginBottom: 12 }}>
-          <h2>Agent trace</h2>
-          <button className="btn sm ghost" onClick={() => openTrace(null)}>close</button>
-        </div>
-        <p className="muted small">Every agent run, every tool call, every memory write. No black box.</p>
-        {list.length === 0 && <p>No agent runs yet. Import something or ask the coach!</p>}
-        {list.map((t) => (
-          <div key={t.id} style={{ marginBottom: 18 }}>
-            <h3 style={{ marginBottom: 8 }}>{t.title}</h3>
-            <div className="muted small" style={{ marginBottom: 8 }}>{new Date(t.at).toLocaleTimeString("en-IN")}</div>
-            {t.steps.map((s, i) => (
-              <div className="step popin" key={i} style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="row between"><AgentTag name={s.agent} />{s.ms !== undefined && <span className="mono muted">{s.ms}ms</span>}</div>
-                <div style={{ fontWeight: 600, marginTop: 6 }}>{s.action}</div>
-                {s.detail && <div className="mono muted" style={{ marginTop: 4, wordBreak: "break-word" }}>{s.detail}</div>}
-              </div>
-            ))}
-          </div>
-        ))}
+    <Sheet open={!!traceOpen} onClose={() => openTrace(null)} title="Agent trace">
+      <div className="row between" style={{ marginBottom: 8 }}>
+        <h2>Agent trace</h2>
+        <button className="btn sm ghost" onClick={() => openTrace(null)}>Done</button>
       </div>
-    </>
+      <p className="muted small" style={{ marginTop: 0 }}>Every agent run, tool call and memory write. No black box.</p>
+      {list.length === 0 && <p className="muted">No agent runs yet. Import some SMS or ask the coach.</p>}
+      {list.map((t) => (
+        <div key={t.id} style={{ marginBottom: 20 }}>
+          <div className="row between" style={{ marginBottom: 8 }}><h3>{t.title}</h3><span className="muted small">{new Date(t.at).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}</span></div>
+          {t.steps.map((s, i) => (
+            <div className="step popin" key={i} style={{ animationDelay: `${120 + i * 40}ms` }}>
+              <div className="row between"><AgentTag name={s.agent} />{s.ms !== undefined && <span className="mono muted">{s.ms}ms</span>}</div>
+              <div style={{ fontWeight: 500, marginTop: 6 }}>{s.action}</div>
+              {s.detail && <div className="mono muted" style={{ marginTop: 4, wordBreak: "break-word" }}>{s.detail}</div>}
+            </div>
+          ))}
+        </div>
+      ))}
+    </Sheet>
+  );
+}
+
+function Segmented({ value, onChange }: { value: "roast" | "hype"; onChange: (v: "roast" | "hype") => void }) {
+  return (
+    <div className="seg" role="radiogroup" aria-label="Coach voice" data-v={value}>
+      <span className="seg-thumb" aria-hidden />
+      <button role="radio" aria-checked={value === "roast"} onClick={() => onChange("roast")}><Flame size={14} />Roast</button>
+      <button role="radio" aria-checked={value === "hype"} onClick={() => onChange("hype")}><Heart size={14} />Hype</button>
+    </div>
   );
 }
 
@@ -77,10 +86,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="card" style={{ padding: 12, boxShadow: "none" }}>
             <div className="small" style={{ fontWeight: 600, marginBottom: 6 }}>Coach voice</div>
-            <div className="row">
-              <button className={`btn sm ${state.voice === "roast" ? "purple" : "ghost"}`} onClick={() => update((s) => ({ ...s, voice: "roast" }))}><Flame size={14} />Roast</button>
-              <button className={`btn sm ${state.voice === "hype" ? "purple" : "ghost"}`} onClick={() => update((s) => ({ ...s, voice: "hype" }))}><Heart size={14} />Hype</button>
-            </div>
+            <Segmented value={state.voice} onChange={(v) => update((s) => ({ ...s, voice: v }))} />
           </div>
           <button className="btn sm ghost" onClick={() => openTrace("all")}><Search size={14} />Agent runs ({state.traces.length})</button>
           <div className="small muted"><Lock size={12} style={{ verticalAlign: "-1px", marginRight: 4 }} />Raw SMS parsed in your session; only structured rows are kept.</div>
@@ -95,7 +101,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         ))}
       </nav>
       <TraceDrawer />
-      <div className="toasts">{toasts.map((t) => <div key={t.id} className="toast">{t.msg}</div>)}</div>
+      <div className="toasts" aria-live="polite">{toasts.map((t) => <div key={t.id} className="toast">{t.msg}</div>)}</div>
     </div>
   );
 }
