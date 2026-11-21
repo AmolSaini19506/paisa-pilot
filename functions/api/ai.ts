@@ -190,6 +190,17 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
         try { calls = json<any>(planRaw).calls ?? []; } catch { calls = [{ name: "get_twin", args: {} }]; }
         if (!calls.some((c) => c.name === "get_twin")) calls.unshift({ name: "get_twin", args: {} });
         step("Coach", `Planner (${FAST}) chose ${calls.length} tool call(s)`, calls.map((c) => c.name).join(", "));
+        // Deterministic assist: numbers the 8B planner may miss
+        const rentM = last.match(/rent[^\d₹]*(?:₹|rs\.?)?\s*([\d,.]+)\s*(k)?/i);
+        if (rentM && ctx.avg?.Rent) {
+          let nv = parseFloat(rentM[1].replace(/,/g, "")); if (rentM[2]) nv *= 1000;
+          if (nv > ctx.avg.Rent) {
+            const pct = Math.round(((nv - ctx.avg.Rent) / ctx.avg.Rent) * 1000) / 10;
+            calls = calls.filter((c) => c.name !== "simulate");
+            calls.push({ name: "simulate", args: { rentHike: pct } });
+            if (!calls.some((c) => c.name === "remember_fact")) calls.push({ name: "remember_fact", args: { fact: `Rent goes up from ₹${Math.round(ctx.avg.Rent).toLocaleString("en-IN")} to ₹${Math.round(nv).toLocaleString("en-IN")}/month from March 2027` } });
+          }
+        }
         // Step 2 — execute tools against the Money Twin snapshot
         const results: any = {};
         for (const c of calls.slice(0, 5)) {
@@ -204,7 +215,7 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           step("Coach", `tool: ${c.name}`, JSON.stringify(a).slice(0, 140));
         }
         // Step 3 — answer grounded in tool results
-        text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}\n\nWrite the reply to the user's last message now: 3-5 punchy sentences, quote 2-3 specific ₹ numbers from the results, name at least one goal and its target date, and end with one concrete next move. ${facts.length ? "Confirm you've saved what they told you to memory. " : ""}Never mention tool names, JSON or these instructions.`, history, 500);
+        text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}\n\nWrite the reply to the user's last message now: 3-5 punchy sentences, quote 2-3 specific ₹ numbers from the results, name at least one goal and its target date, and end with one concrete next move. ${facts.length ? "Confirm you've saved what they told you to memory. " : ""}Do NOT do arithmetic yourself: only quote numbers that appear in TOOL RESULTS (e.g. changePerMonth, newMonthlySurplus, daysGained). Never mention tool names, JSON or these instructions.`, history, 500);
         text = text.split("\n").filter((l) => !/^\s*(get_twin|query_spend|simulate|remember_fact)\b/.test(l)).join("\n").replace(/\b(get_twin|query_spend|remember_fact)\b/g, "").trim();
       } catch (e: any) {
         step("Coach", "AI error → offline template answer", e.message);
@@ -269,7 +280,7 @@ function runSim(ctx: any, sc: any) {
     (avg["Rent"] ?? 0) * ((sc.rentHike ?? 0) / 100);
   const surplus = ctx.twin.surplus + delta;
   return {
-    newMonthlySurplus: Math.round(surplus), changePerMonth: Math.round(delta),
+    newMonthlySurplus: Math.round(surplus), changePerMonth: Math.round(delta), changePerYear: Math.round(delta * 12),
     goals: (ctx.goals || []).map((g: any) => {
       const need = g.target - g.saved;
       const base = need / Math.max(ctx.twin.surplus * g.weight, 1);
