@@ -125,7 +125,7 @@ export default function Goals() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff12" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} interval={3} />
                   <YAxis tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} tick={{ fontSize: 11 }} width={50} />
-                  <Tooltip formatter={(v: any) => inr(+v)} />
+                  <Tooltip formatter={(v: any) => inr(+v)} contentStyle={{ background: "var(--card)", border: "1px solid var(--hair)", borderRadius: 10, color: "var(--ink)" }} labelStyle={{ color: "var(--muted)", fontWeight: 600 }} itemStyle={{ color: "var(--ink)" }} cursor={{ stroke: "var(--hair)" }} />
                   <Legend />
                   <Line type="monotone" dataKey="base" name="Current path" stroke="#6b6b75" strokeWidth={2} strokeDasharray="6 4" dot={false} />
                   <Line type="monotone" dataKey="scenario" name="Your what-if" stroke={accentFor(moodRatio).accent} strokeWidth={4} dot={false} />

@@ -32,13 +32,16 @@ export function buildMemory(txns: Txn[]): Map<string, string> {
   return m;
 }
 
+/** Payment aggregators: one UPI prefix covers thousands of unrelated shops. */
+export const AGGREGATOR = /^(bharatpe|paytmqr|paytm|phonepe|gpay|razorpay|cashfree|payu|upi|q\d)/i;
+
 /** Deterministic rule proposal (the LLM version refines/explains this). */
 export function proposeRule(t: Txn, category: string, all: Txn[]): Omit<Rule, "id" | "createdAt" | "hits"> & { matches: number } {
   let cand: Omit<Rule, "id" | "createdAt" | "hits">;
   if (t.vpa) {
     const handle = t.vpa.split("@")[0];
     const prefix = handle.replace(/[\d._-]+$/, "").replace(/\d+/g, "");
-    const usePrefix = prefix.length >= 4 && prefix !== handle;
+    const usePrefix = prefix.length >= 4 && prefix !== handle && !AGGREGATOR.test(handle);
     cand = usePrefix
       ? { field: "vpa", type: "prefix", pattern: prefix, category, why: `All UPI IDs starting with "${prefix}" look like the same kind of merchant` }
       : { field: "vpa", type: "equals", pattern: t.vpa, category, why: `This exact UPI ID` };
@@ -53,5 +56,6 @@ export function proposeRule(t: Txn, category: string, all: Txn[]): Omit<Rule, "i
 export function accuracy(txns: Txn[]): number {
   const d = txns.filter((t) => t.dir === "debit");
   if (!d.length) return 0;
-  return Math.round((d.filter((t) => t.category !== "Other" && !t.review).length / d.length) * 100);
+  // only count what the app labelled on its own; manual fixes aren't "auto"
+  return Math.round((d.filter((t) => t.src !== "user" && t.category !== "Other" && !t.review).length / d.length) * 100);
 }

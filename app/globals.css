@@ -496,3 +496,16 @@ section.open [style*="borderTop"]:hover, section.open .small[style*="borderBotto
 .w-poster:hover .w-poster-stack span:nth-child(1) { transform: translateY(-10px); } .w-poster:hover .w-poster-stack span:nth-child(2) { transform: translateY(-34px); } .w-poster:hover .w-poster-stack span:nth-child(3) { transform: translateY(-58px); }
 .w-play { margin-top: auto; display: inline-flex; align-items: center; gap: 10px; background: #0b0b0d; color: #fff; border-radius: 999px; padding: 12px 20px; font-weight: 700; align-self: flex-start; box-shadow: 0 4px 0 rgba(0,0,0,.35); z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .w-bars i.run { animation: none; transform: scaleX(1); } }
+
+/* phone: top bar with menu (voice, agent runs, reset, log out) */
+.mobile-top { display: none; }
+@media (max-width: 860px) {
+  .mobile-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; position: sticky; top: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-bottom: 1px solid var(--hair); }
+  .mobile-top .logo { margin: 0; }
+  /* transactions table fits a 375px phone */
+  .txn-table { min-width: 0 !important; }
+  .txn-table td, .txn-table th { padding: 8px 6px !important; }
+  .txn-table td.mono { white-space: nowrap; }
+  .txn-table select { max-width: 120px; }
+  .txn-table .vpa { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

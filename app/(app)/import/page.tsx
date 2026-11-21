@@ -6,7 +6,7 @@ import { CatIcon } from "@/components/Icons";
 import { parseCsvRows, splitSms } from "@/lib/parser";
 import { ingest, type IngestResult } from "@/lib/pipeline";
 import { SAMPLE_CSV, SAMPLE_SMS } from "@/lib/seed";
-import { useStore } from "@/lib/store";
+import { authHeaders, useStore } from "@/lib/store";
 import { inr } from "@/lib/twin";
 
 export default function ImportPage() {
@@ -47,7 +47,7 @@ export default function ImportPage() {
   const runPdf = async (f: File) => {
     setBusy("Extracting PDF text…");
     const fd = new FormData(); fd.append("file", f);
-    const j = await fetch("/api/pdf", { method: "POST", body: fd }).then((r) => r.json()).catch(() => ({ lines: [] }));
+    const j = await fetch("/api/pdf", { method: "POST", body: fd, headers: authHeaders() }).then((r) => r.json()).catch(() => ({ lines: [] }));
     if (!j.lines?.length) { toast("Couldn't find transaction lines in that PDF ", ""); setBusy(null); return; }
     setBusy(`AI is reading ${j.lines.length} statement lines…`);
     const r = await ingest(state, "pdf", null, j.lines);

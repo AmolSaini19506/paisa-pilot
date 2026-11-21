@@ -95,7 +95,7 @@ export function prettyMerchant(raw: string, vpa?: string): string {
   for (const [re, name] of BRAND) if (re.test(src)) return name;
   if (vpa) {
     const handle = vpa.split("@")[0];
-    if (/^bharatpe/i.test(handle)) return "BharatPe merchant " + handle.replace(/\D/g, "").slice(-4);
+    if (/^bharatpe/i.test(handle)) return "BharatPe " + handle.replace(/\D/g, "").slice(-4);
     if (/^paytmqr/i.test(handle)) return "Paytm QR " + handle.replace(/\D/g, "").slice(-4);
     return handle.replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
   }

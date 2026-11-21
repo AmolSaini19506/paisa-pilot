@@ -94,6 +94,7 @@ function heurScenario(text: string) {
 const TOOLS: any[] = [
   { name: "get_twin", description: "Get the user's Money Twin: income, fixed costs, surplus, emergency fund months, goals, health score, memory facts.", input_schema: { type: "object", properties: {} } },
   { name: "query_spend", description: "Get spend by category for a month (YYYY-MM) or the 3-month average when month='avg'. Optionally filter one category.", input_schema: { type: "object", properties: { month: { type: "string" }, category: { type: "string" } }, required: ["month"] } },
+  { name: "query_merchant", description: "Get exact spend totals per merchant (e.g. Swiggy, Zomato, Uber) for the latest month. Use this, not category averages, when the user asks about a specific merchant.", input_schema: { type: "object", properties: { merchant: { type: "string" } } } },
   { name: "simulate", description: "Run a what-if. Percent fields are 0-100. Returns goal ETAs vs target dates and days gained/lost.", input_schema: { type: "object", properties: { foodCut: { type: "number" }, leakCut: { type: "number" }, shoppingCut: { type: "number" }, rentHike: { type: "number" }, incomeHike: { type: "number" }, extraSip: { type: "number" }, cancelSubs: { type: "number" } } } },
   { name: "remember_fact", description: "Save a durable fact about the user's money life to memory (e.g. upcoming rent hike, a wedding in Dec, job change). Use when the user shares something future-relevant.", input_schema: { type: "object", properties: { fact: { type: "string" }, date: { type: "string", description: "YYYY-MM-DD when it takes effect, if known" } }, required: ["fact"] } },
 ];
@@ -201,11 +202,13 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
         const toolList = TOOLS.map((t) => `- ${t.name}: ${t.description} args: ${JSON.stringify(t.input_schema.properties)}`).join("\n");
         const history = messages.slice(-6).map((m: any) => `${m.role}: ${m.text}`).join("\n");
         const planRaw = await llm(FAST,
-          `You are the planning step of a finance coach agent. Pick the tools needed to answer the user's LAST message. Tools:\n${toolList}\nRules: always include get_twin. Use simulate for any what-if (percent fields 0-100). Use remember_fact when the user shares a future money event. Return ONLY JSON {"calls":[{"name":string,"args":object}]}.`,
+          `You are the planning step of a finance coach agent. Pick the tools needed to answer the user's LAST message. Tools:\n${toolList}\nRules: always include get_twin. Use query_merchant when the user names a shop or app (Swiggy, Zomato, Uber...). Use simulate for any what-if (percent fields 0-100). Use remember_fact when the user shares a future money event. Return ONLY JSON {"calls":[{"name":string,"args":object}]}.`,
           history, 300);
         let calls: any[] = [];
         try { calls = json<any>(planRaw).calls ?? []; } catch { calls = [{ name: "get_twin", args: {} }]; }
         if (!calls.some((c) => c.name === "get_twin")) calls.unshift({ name: "get_twin", args: {} });
+        const named = (ctx.merchantsThisMonth?.top ?? []).find((m: any) => last.toLowerCase().includes(String(m.merchant).toLowerCase().split(" ")[0]));
+        if (named && !calls.some((c) => c.name === "query_merchant")) calls.push({ name: "query_merchant", args: { merchant: String(named.merchant).split(" ")[0] } });
         step("Coach", `Planner (${FAST}) chose ${calls.length} tool call(s)`, calls.map((c) => c.name).join(", "));
         // Deterministic assist: numbers the 8B planner may miss
         const rentM = last.match(/rent[^\d₹]*(?:₹|rs\.?)?\s*([\d,.]+)\s*(k)?/i);
@@ -225,6 +228,12 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           let out: any;
           if (c.name === "get_twin") out = ctx.twin;
           else if (c.name === "query_spend") out = a.month === "avg" || !a.month ? ctx.avg : ctx.months?.[a.month] ?? ctx.avg;
+          else if (c.name === "query_merchant") {
+            const all = ctx.merchantsThisMonth?.top ?? [];
+            const q = String(a.merchant ?? "").toLowerCase().trim();
+            const hits = q ? all.filter((m: any) => m.merchant.toLowerCase().includes(q)) : all;
+            out = { month: ctx.merchantsThisMonth?.month, merchants: hits.length ? hits : all.slice(0, 10), note: hits.length || !q ? "exact totals" : `no merchant matched "${a.merchant}"` };
+          }
           else if (c.name === "simulate") out = runSim(ctx, a);
           else if (c.name === "remember_fact" && a.fact && /remember|from|next|going|will|plan|wedding|shaadi|hike|joining|moving|baby|loan|rent/i.test(last)) { facts.push({ fact: a.fact, date: a.date }); out = { saved: true }; }
           else continue;
@@ -233,7 +242,7 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
         }
         // Step 3 — answer grounded in tool results
         text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}\n\nWrite the reply to the user's last message now: 3-5 punchy sentences, quote 2-3 specific ₹ numbers from the results, name at least one goal and its target date, and end with one concrete next move. ${facts.length ? "Confirm you've saved what they told you to memory. " : ""}Do NOT do arithmetic yourself: only quote numbers that appear in TOOL RESULTS (e.g. changePerMonth, newMonthlySurplus, daysGained). Never mention tool names, JSON or these instructions.`, history, 500);
-        text = text.split("\n").filter((l) => !/^\s*(get_twin|query_spend|simulate|remember_fact)\b/.test(l)).join("\n").replace(/\b(get_twin|query_spend|remember_fact)\b/g, "").trim();
+        text = text.split("\n").filter((l) => !/^\s*(get_twin|query_spend|query_merchant|simulate|remember_fact)\b/.test(l)).join("\n").replace(/\b(get_twin|query_spend|query_merchant|remember_fact)\b/g, "").trim();
       } catch (e: any) {
         step("Coach", "AI error → offline template answer", e.message);
         text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);

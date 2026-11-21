@@ -57,7 +57,7 @@ ${proj.goals.map((g) => `- ${g.goal.name}: ${g.onTrack ? "on track" : "running l
 ## Next month's 3 moves
 1. Cap food delivery at 9 orders (≈ ₹1,500 saved → Goa ~12 days sooner)
 2. Halve the chai leak (≈ ${inr(leak.monthly / 2)} saved)
-3. Cancel Cult.fit if you're not going (₹1,499/month back)`;
+${state.cancelled.includes("Cult.fit") ? `3. Park the ₹1,499 Cult.fit money straight into Goa` : `3. Cancel Cult.fit if you're not going (₹1,499/month back)`}`;
 }
 
 export default function Review() {
@@ -72,7 +72,7 @@ export default function Review() {
   const gen = async () => {
     setBusy(true);
     const ctx = agentContext(asOfMonth(state, month));
-    const stats = { month, income: s.inc, spent: s.out, saved: s.saved, byCategory: Object.fromEntries(Object.entries(s.cats).map(([k, v]) => [k, Math.round(v)])), threeMonthAvg: ctx.avg, topMerchant: s.topMerchant, biggestSpend: s.biggest && { merchant: s.biggest.merchant, amount: s.biggest.amount }, count: s.count, chaiLeakMonthly: Math.round(leak.monthly), chaiLeakCount: leak.count };
+    const stats = { month, income: s.inc, spent: s.out, saved: s.saved, byCategory: Object.fromEntries(Object.entries(s.cats).map(([k, v]) => [k, Math.round(v)])), threeMonthAvg: ctx.avg, topMerchant: s.topMerchant, biggestSpend: s.biggest && { merchant: s.biggest.merchant, amount: s.biggest.amount }, count: s.count, chaiLeakMonthly: Math.round(leak.monthly), chaiLeakCount: leak.count, healthScore: ctx.twin.healthScore };
     const goals = simulate(state, BASE).goals.map((g) => ({ name: g.goal.name, target: g.goal.date, eta: g.never ? "never at this rate" : g.eta, onTrack: g.onTrack }));
     const r = await ai<string>("review", { stats, ctx: { ...ctx.twin, goalsRunway: goals, recurring: ctx.recurring }, voice: state.voice });
     const text = r.data || templateReview(state, month);

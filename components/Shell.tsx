@@ -6,7 +6,7 @@ import Sheet from "@/components/Sheet";
 import { useStore } from "@/lib/store";
 import { monthLeft } from "@/lib/twin";
 import { setAccentBase } from "@/lib/accent";
-import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, Flame, Heart, Lock, Menu, LogOut, type LucideIcon } from "lucide-react";
 
 const NAV: { href: string; label: string; short: string; icon: LucideIcon }[] = [
   { href: "/home", label: "Money Twin", short: "Twin", icon: LayoutDashboard },
@@ -72,8 +72,31 @@ function Segmented({ value, onChange }: { value: "roast" | "hype"; onChange: (v:
   );
 }
 
+function SideActions({ onDone }: { onDone?: () => void }) {
+  const { logout, state, update, openTrace, reset, toast } = useStore();
+  const router = useRouter();
+  const [sure, setSure] = useState(false);
+  useEffect(() => { if (!sure) return; const t = setTimeout(() => setSure(false), 4000); return () => clearTimeout(t); }, [sure]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div className="card" style={{ padding: 12, boxShadow: "none" }}>
+        <div className="small" style={{ fontWeight: 600, marginBottom: 6 }}>Coach voice</div>
+        <Segmented value={state.voice} onChange={(v) => update((s) => ({ ...s, voice: v }))} />
+      </div>
+      <button className="btn sm ghost" onClick={() => { onDone?.(); openTrace("all"); }}><Search size={14} />Agent runs ({state.traces.length})</button>
+      <div className="small muted"><Lock size={12} style={{ verticalAlign: "-1px", marginRight: 4 }} />SMS text is read once and never saved; only structured rows are kept.</div>
+      <button className={`btn sm ${sure ? "pink" : "ghost"}`} onClick={() => {
+        if (!sure) return setSure(true);
+        setSure(false); reset(); toast("Demo data reset to fresh Riya", "↺"); onDone?.(); router.push("/home");
+      }}><RotateCcw size={14} />{sure ? "Tap again to wipe everything" : "Reset demo data"}</button>
+      <button className="btn sm ghost" onClick={() => { onDone?.(); logout(); router.replace("/"); }}><LogOut size={14} />Log out</button>
+    </div>
+  );
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const { authed, ready, logout, toasts, state, update, openTrace, reset, toast } = useStore();
+  const { authed, ready, toasts, state } = useStore();
+  const [menu, setMenu] = useState(false);
   const path = usePathname();
   const router = useRouter();
   useEffect(() => { if (ready && !authed) router.replace("/"); }, [ready, authed, router]);
@@ -90,17 +113,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <Link key={n.href} href={n.href} className={path === n.href ? "on" : ""}><n.icon size={18} strokeWidth={1.75} />{n.label}</Link>
           ))}
         </nav>
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
-          <div className="card" style={{ padding: 12, boxShadow: "none" }}>
-            <div className="small" style={{ fontWeight: 600, marginBottom: 6 }}>Coach voice</div>
-            <Segmented value={state.voice} onChange={(v) => update((s) => ({ ...s, voice: v }))} />
-          </div>
-          <button className="btn sm ghost" onClick={() => openTrace("all")}><Search size={14} />Agent runs ({state.traces.length})</button>
-          <div className="small muted"><Lock size={12} style={{ verticalAlign: "-1px", marginRight: 4 }} />Raw SMS parsed in your session; only structured rows are kept.</div>
-          <button className="btn sm ghost" onClick={() => { reset(); toast("Demo data reset to fresh Riya", "↺"); router.push("/home"); }}><RotateCcw size={14} />Reset demo data</button>
-          <button className="btn sm ghost" onClick={() => { logout(); router.replace("/"); }}>Log out</button>
-        </div>
+        <div style={{ marginTop: "auto" }}><SideActions /></div>
       </aside>
+      <header className="mobile-top">
+        <div className="logo"><span className="mark">₹</span>Paisa Pilot</div>
+        <button className="btn sm ghost" aria-label="Menu" onClick={() => setMenu(true)}><Menu size={18} /></button>
+      </header>
+      <Sheet open={menu} onClose={() => setMenu(false)} title="Menu"><SideActions onDone={() => setMenu(false)} /></Sheet>
       <main className="main">{children}</main>
       <nav className="mobile-nav" style={{ ["--i" as any]: Math.max(0, NAV.findIndex((n) => n.href === path)), ["--n" as any]: NAV.length }}>
         <span className="nav-pill" aria-hidden />
