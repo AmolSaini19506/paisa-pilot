@@ -4,6 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sheet from "@/components/Sheet";
 import { useStore } from "@/lib/store";
+import { computeTwin } from "@/lib/twin";
+import { setAccentBase } from "@/lib/accent";
 import { LayoutDashboard, Inbox, ReceiptText, Repeat, Target, MessageCircle, CalendarRange, Search, RotateCcw, LogOut, Flame, Heart, Lock, type LucideIcon } from "lucide-react";
 
 const NAV: { href: string; label: string; short: string; icon: LucideIcon }[] = [
@@ -73,6 +75,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   useEffect(() => { if (ready && !authed) router.replace("/"); }, [ready, authed, router]);
+  const surplus = computeTwin(state).surplus;
+  useEffect(() => { setAccentBase(surplus); }, [surplus]);
   if (!ready || !authed) return <div style={{ padding: 40 }} className="display">loading the vibes…</div>;
   return (
     <div className="shell">

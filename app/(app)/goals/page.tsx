@@ -1,6 +1,7 @@
 "use client";
 import { GoalIcon } from "@/components/Icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { setAccentOverride } from "@/lib/accent";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
@@ -34,6 +35,8 @@ export default function Goals() {
   const [letterBusy, setLetterBusy] = useState<string | null>(null);
   const proj = simulate(state, sc);
   const base = simulate(state, BASE);
+  useEffect(() => { setAccentOverride(proj.surplus); }, [proj.surplus]);
+  useEffect(() => () => setAccentOverride(null), []);
   const changed = JSON.stringify(sc) !== JSON.stringify(BASE);
 
   const runNl = async () => {
@@ -131,7 +134,7 @@ export default function Goals() {
         </div>
       </div>
 
-      <div className="card" style={{ background: "var(--purple)", color: "#0b0b0b" }}>
+      <div className="card" style={{ background: "var(--purple)", color: "var(--accent-ink)" }}>
         <div className="row between wrap">
           <div>
             <h2>Letter from Future You (2030)</h2>

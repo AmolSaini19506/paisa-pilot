@@ -52,6 +52,7 @@ export default function Home() {
           </div>
           <div className="mc-amount"><Num value={tw.surplus} format={inr} /></div>
           <div className="mc-sub">after rent, EMI, SIPs and bills · {Math.round((tw.fixed / tw.income) * 100)}% of salary is locked</div>
+          <div className="mc-legend"><i />card colour follows what&apos;s left: green at ₹1L, maroon under ₹5k</div>
           <div className="mc-foot">
             <div><span>In</span><b><Num value={tw.income} format={inr} /></b></div>
             <div><span>Fixed</span><b><Num value={tw.fixed} format={inr} /></b></div>
