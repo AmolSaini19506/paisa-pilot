@@ -259,7 +259,7 @@ export function nudges(state: AppState): Nudge[] {
         emoji: "", tone: "warn",
         title: roast ? `${p.category} is in its villain era` : `${p.category} running a little hot`,
         body: roast
-          ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days} days. The kitchen misses you bestie.`
+          ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days} days.${/food|dining|groceries|snacks/i.test(p.category) ? " The kitchen misses you bestie." : /shopping/i.test(p.category) ? " The cart can wait, bestie." : ""}`
           : `You're ${Math.round((p.ratio - 1) * 100)}% ahead of your usual pace. Easing off for 9 days keeps Goa on schedule (~${days} days saved). You got this!`,
       });
     }
