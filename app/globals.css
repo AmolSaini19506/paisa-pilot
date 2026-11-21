@@ -294,3 +294,26 @@ input:focus, select:focus, textarea:focus { border-color: var(--lime); box-shado
   .mobile-nav a.on { background: var(--lime); color: #0b0b0b; }
   .main { padding-bottom: 120px; }
 }
+
+/* ===== Tactile layer: sections pop on hover, Roast/Hype press like real keys ===== */
+.stagger > *, .popin { animation-fill-mode: backwards !important; }
+.card, .money-card, .quick { transition: transform .45s var(--spring-bounce), box-shadow .45s var(--spring), border-color .2s; will-change: transform; }
+@media (hover: hover) {
+  .card:hover, .quick:hover { transform: translateY(-4px) scale(1.012); box-shadow: 0 18px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(212,255,58,.14); border-color: rgba(212,255,58,.18); }
+  .money-card:hover { transform: translateY(-4px) rotate(-.6deg) scale(1.015); box-shadow: 0 22px 50px rgba(212,255,58,.18); }
+  .side .card:hover, .sheet .card:hover, .card.leak .card:hover { transform: none; box-shadow: none; }
+}
+/* Roast/Hype: two physical keys with depth */
+.seg { background: none; box-shadow: none; padding: 0; gap: 8px; }
+.seg-thumb { display: none; }
+.seg button { background: var(--raised); color: var(--muted); border-radius: 14px; padding: 8px 10px; font-weight: 600;
+  box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,.06); transform: translateY(0);
+  transition: transform .12s ease-out, box-shadow .12s ease-out, background .2s, color .2s; }
+.seg button:hover { color: var(--ink); }
+.seg button:active { transform: translateY(4px) !important; box-shadow: 0 0 0 #000, inset 0 2px 4px rgba(0,0,0,.4); }
+.seg button[aria-checked="true"] { background: var(--lime); color: #0b0b0b; box-shadow: 0 2px 0 #6f8a10, inset 0 2px 3px rgba(0,0,0,.18); transform: translateY(2px); }
+/* Primary buttons get the same key depth */
+.btn.purple, .btn.pink, button.btn:not(.ghost):not(.sm):not(.yellow):not(.cyan) { box-shadow: 0 4px 0 #6f8a10; transition: transform .12s ease-out, box-shadow .12s ease-out, opacity .15s; }
+.btn.purple:active, .btn.pink:active, button.btn:not(.ghost):not(.sm):not(.yellow):not(.cyan):active { transform: translateY(4px); box-shadow: 0 0 0 #6f8a10; }
+.q-item:active .q-ico { transform: scale(.88); }
+@media (prefers-reduced-motion: reduce) { .card:hover, .quick:hover, .money-card:hover { transform: none !important; } }

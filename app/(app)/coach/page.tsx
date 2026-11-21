@@ -50,9 +50,9 @@ export default function Coach() {
           <h1>Coach</h1>
           <p className="muted">Ask anything, English or Hinglish. Every number comes from your Money Twin.</p>
         </div>
-        <div className="row">
-          <button className={`btn sm ${state.voice === "roast" ? "purple" : "ghost"}`} onClick={() => update((s) => ({ ...s, voice: "roast" }))}>Roast me</button>
-          <button className={`btn sm ${state.voice === "hype" ? "purple" : "ghost"}`} onClick={() => update((s) => ({ ...s, voice: "hype" }))}>Hype me</button>
+        <div className="seg" role="radiogroup" aria-label="Coach voice" style={{ minWidth: 220 }}>
+          <button role="radio" aria-checked={state.voice === "roast"} onClick={() => update((s) => ({ ...s, voice: "roast" }))}>🔥 Roast me</button>
+          <button role="radio" aria-checked={state.voice === "hype"} onClick={() => update((s) => ({ ...s, voice: "hype" }))}>💜 Hype me</button>
         </div>
       </div>
 
