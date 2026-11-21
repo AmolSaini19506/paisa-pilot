@@ -1,7 +1,7 @@
 "use client";
 import { CatIcon } from "@/components/Icons";
 import { useStore } from "@/lib/store";
-import { daysGainedOnGoal, detectRecurring, inr } from "@/lib/twin";
+import { days, daysGainedOnGoal, detectRecurring, inr } from "@/lib/twin";
 
 export default function Subs() {
   const { state, update, toast } = useStore();
@@ -13,8 +13,8 @@ export default function Subs() {
   const monthly = alive.reduce((a, r) => a + r.last, 0);
   const goa = state.goals.findIndex((g) => /goa/i.test(g.name));
 
-  const bury = (m: string, amt: number) => {
-    update((s) => ({ ...s, cancelled: [...s.cancelled, m], memoryDiff: { at: new Date().toISOString(), lines: [`${m} marked for cancellation → ${inr(amt * 12)}/year freed`, `Reminder: cancel inside the app before ${new Date(Date.now() + 5 * 864e5).toLocaleDateString("en-IN")} renewal`] } }));
+  const bury = (m: string, amt: number, due: string) => {
+    update((s) => ({ ...s, cancelled: [...s.cancelled, m], memoryDiff: { at: new Date().toISOString(), lines: [`${m} marked for cancellation → ${inr(amt * 12)}/year freed`, `Reminder: cancel inside the app before the ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} renewal`] } }));
     toast(`RIP ${m}  ${inr(amt * 12)}/year back in your pocket. Badge unlocked: Subscription Slayer `, "");
   };
 
@@ -38,7 +38,7 @@ export default function Subs() {
             <div className="row between">
               <h3><CatIcon c={r.category} />{r.merchant}</h3>
               {r.status === "unused" && <span className="chip red">unused</span>}
-              {r.status === "price_changed" && <span className="chip yellow">price up</span>}
+              {r.status === "price_changed" && <span className="chip yellow">plan went up</span>}
               {r.status === "active" && <span className="chip lime">active</span>}
             </div>
             <div className="big" style={{ marginTop: 6 }}>{inr(r.last)}<span className="small muted">/mo</span></div>
@@ -48,8 +48,8 @@ export default function Subs() {
               {r.amounts.map((a, i) => <div key={i} style={{ width: 18, height: `${(a / Math.max(...r.amounts)) * 100}%`, background: i === r.amounts.length - 1 && r.status === "price_changed" ? "var(--red)" : "var(--purple)", border: "2px solid var(--ink)", borderRadius: 4 }} />)}
             </div>
             {r.note && <div className="small" style={{ fontWeight: 600 }}>{r.note}</div>}
-            {r.status !== "active" && goa >= 0 && <div className="small" style={{ marginTop: 6 }}>Cancel → Goa <b>{daysGainedOnGoal(state, goa, r.last)} days sooner</b> </div>}
-            <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => bury(r.merchant, r.last)}>Bury it</button>
+            {r.status !== "active" && goa >= 0 && <div className="small" style={{ marginTop: 6 }}>Cancel → Goa <b>{days(daysGainedOnGoal(state, goa, r.last))} sooner</b> </div>}
+            <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => bury(r.merchant, r.last, r.nextDue)}>Bury it</button>
           </div>
         ))}
       </div>

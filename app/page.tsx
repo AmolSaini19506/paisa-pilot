@@ -13,8 +13,11 @@ export default function Login() {
 
   const go = (e?: React.FormEvent, em = email, p = pw) => {
     e?.preventDefault();
+    if (!em.trim()) return setErr("Enter your email to log in.");
+    if (!/^\S+@\S+\.\S+$/.test(em.trim())) return setErr("That email doesn't look right. Check for typos.");
+    if (!p) return setErr("Enter your password.");
     if (login(em, p)) router.replace("/home");
-    else setErr("Wrong email or password. Use the judge login below");
+    else setErr("Wrong email or password. Use the judge login below.");
   };
 
   return (

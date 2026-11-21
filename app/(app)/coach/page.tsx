@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
 import { ArrowUpRight, Send } from "lucide-react";
-import { computeTwin, inr } from "@/lib/twin";
+import { computeTwin, inr, tidyMoney } from "@/lib/twin";
 import { agentContext, ai, useStore } from "@/lib/store";
 
 const SUGGEST = [
@@ -53,7 +53,7 @@ export default function Coach() {
 
   const tw = computeTwin(state);
   const txCount = state.txns.length;
-  const rich = (t: string) => t.split(/(₹\s?[\d,]+(?:\.\d+)?(?:\s?(?:lakh|k|L))?|\d+\s?days?|\d{1,3}%)/g).map((p, k) => k % 2 ? <b key={k} className="num-hl">{p}</b> : p);
+  const rich = (t: string) => tidyMoney(t).split(/(₹\s?[\d,]+(?:\.\d+)?(?:\s?(?:lakh|k|L))?|\d+\s?days?|\d{1,3}%)/g).map((p, k) => k % 2 ? <b key={k} className="num-hl">{p}</b> : p);
 
   return (
     <div className="coach">

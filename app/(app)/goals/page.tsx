@@ -6,7 +6,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
 import { agentContext, ai, useStore } from "@/lib/store";
-import { BASE, inr, simulate, type Scenario } from "@/lib/twin";
+import { BASE, days, etaLabel, inr, simulate, type Scenario } from "@/lib/twin";
 
 const SLIDERS: { k: keyof Scenario; label: string; max: number; step: number; unit: string; emoji: string }[] = [
   { k: "foodCut", label: "Order in / dine out less", max: 60, step: 5, unit: "%", emoji: "" },
@@ -47,7 +47,7 @@ export default function Goals() {
     const next = { ...BASE, ...(r.data ?? {}) };
     setSc(next);
     const p = simulate(state, next);
-    const lines = p.goals.map((g) => `${g.goal.name}: ${g.deltaDays >= 0 ? `${g.deltaDays} days sooner` : `${-g.deltaDays} days later`} (ETA ${fmtD(g.eta)})`);
+    const lines = p.goals.map((g) => `${g.goal.name}: ${g.never ? "no surplus left to save" : g.deltaDays >= 0 ? `${days(g.deltaDays)} sooner` : `${days(-g.deltaDays)} later`} (ETA ${etaLabel(g, true)})`);
     const id = addTrace(`What-if: "${nl}"`, [
       ...r.trace,
       { agent: "Planner", action: "simulate() — 24-month cash projection", detail: `monthly surplus ${inr(base.surplus)} → ${inr(p.surplus)}` },
@@ -94,7 +94,7 @@ export default function Goals() {
           {SLIDERS.map((s) => (
             <div key={s.k} style={{ marginTop: 14 }}>
               <div className="row between small"><span>{s.label}</span><b>{s.unit === "₹" ? inr(sc[s.k]) : `${sc[s.k]}%`}</b></div>
-              <input type="range" min={0} max={s.max} step={s.step} value={sc[s.k]} onChange={(e) => setSc({ ...sc, [s.k]: +e.target.value })} style={{ width: "100%" }} />
+              <input type="range" min={0} max={s.k === "extraSip" ? Math.max(0, Math.min(s.max, Math.floor(Math.max(base.surplus, 0) / s.step) * s.step)) : s.max} step={s.step} value={sc[s.k]} onChange={(e) => setSc({ ...sc, [s.k]: +e.target.value })} style={{ width: "100%" }} />
             </div>
           ))}
           <div className="card" style={{ marginTop: 16, padding: 12, background: "var(--lime-wash)", color: "var(--ink)", boxShadow: "none" }}>
@@ -110,9 +110,9 @@ export default function Goals() {
                 <div style={{ color: "var(--muted)" }}><GoalIcon id={g.goal.id} size={20} /></div>
                 <div style={{ fontWeight: 600 }}>{g.goal.name}</div>
                 <div className="small muted">target {fmtD(g.goal.date)}</div>
-                <div style={{ marginTop: 6, fontWeight: 600 }}>ETA {fmtD(g.eta)}</div>
-                <span className={`chip ${g.onTrack ? "lime" : "red"}`} style={{ marginTop: 6 }}>{g.onTrack ? "On track" : "Late"}</span>
-                {changed && g.deltaDays !== 0 && <div className="small" style={{ marginTop: 6, fontWeight: 600, color: g.deltaDays > 0 ? "var(--green)" : "var(--red)" }}>{g.deltaDays > 0 ? ` ${g.deltaDays} days sooner` : ` ${-g.deltaDays} days later`}</div>}
+                <div style={{ marginTop: 6, fontWeight: 600 }}>{g.never ? "Never at this rate" : `ETA ${fmtD(g.eta)}`}</div>
+                <span className={`chip ${g.onTrack ? "lime" : "red"}`} style={{ marginTop: 6 }}>{g.onTrack ? "On track" : g.never ? "Stuck" : "Late"}</span>
+                {changed && g.deltaDays !== 0 && <div className="small" style={{ marginTop: 6, fontWeight: 600, color: g.deltaDays > 0 ? "var(--green)" : "var(--red)" }}>{g.deltaDays > 0 ? `${days(g.deltaDays)} sooner` : `${days(-g.deltaDays)} later`}</div>}
               </div>
             ))}
           </div>

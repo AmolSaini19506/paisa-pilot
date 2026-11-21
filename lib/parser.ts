@@ -27,6 +27,13 @@ export const TODAY = "2026-11-21";
 
 /** "1,00,000.50" / "Rs.500" / "INR 2,499" / "₹ 99" -> number */
 export function parseAmount(s: string): number | undefined {
+  const big = s.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(lakhs?|lacs?|l|crores?|cr|k)\b/i);
+  if (big) {
+    const u = big[2].toLowerCase();
+    const mult = u.startsWith("c") ? 1e7 : u === "k" ? 1e3 : 1e5;
+    const n = parseFloat(big[1].replace(/,/g, "")) * mult;
+    return isNaN(n) ? undefined : Math.round(n * 100) / 100;
+  }
   const m = s.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i);
   if (!m) return undefined;
   const n = parseFloat(m[1].replace(/,/g, ""));
@@ -51,6 +58,26 @@ export function parseDate(s: string, fallback = TODAY): string {
     return d.toISOString().slice(0, 10);
   }
   return fallback;
+}
+
+/** A real calendar date (no 30-Feb) that isn't in the future. */
+export function isValidTxnDate(d: string | undefined, today = TODAY): boolean {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const [y, m, dd] = d.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, dd));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== dd) return false;
+  return d <= today && y >= 2000;
+}
+
+/** Keep only what categorising needs: mask account numbers, refs and balances. */
+export function redactRaw(raw: string): string {
+  return raw
+    .replace(/(avl\.?\s*bal|available balance|bal)[^.;]*/gi, "")
+    .replace(/\b(?:a\/c|ac|acct|card)\s*(?:no\.?)?\s*[x*]*\d+/gi, "a/c ••")
+    .replace(/\b\d{6,}\b/g, "••")
+    .replace(/\.\s*\./g, ".")
+    .slice(0, 160)
+    .trim();
 }
 
 export function detectBank(s: string): string | undefined {

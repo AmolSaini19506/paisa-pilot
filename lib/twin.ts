@@ -69,7 +69,7 @@ export function detectRecurring(state: AppState): Recurring[] {
     }
     if (/cult/i.test(merchant)) {
       const fitness = state.txns.filter((t) => /decathlon|gym|protein|fitness/i.test(t.merchant + t.raw) && t.date >= "2026-09-21");
-      if (!fitness.length) { status = "unused"; note = "Zero fitness-related spends in 60 days. Ghost membership? "; }
+      if (!fitness.length) { status = "unused"; note = "Zero fitness-related spends in 60 days. Ghost membership?"; }
     }
     out.push({
       merchant, category: s[0].category, amounts: s.map((t) => t.amount), last, prev,
@@ -119,6 +119,35 @@ export function chaiLeak(state: AppState) {
   return { monthly, perDay, count, by: Object.entries(by).map(([k, v]) => ({ name: k, n: Math.round(v.n / 3), amt: v.amt / 3 })).sort((a, b) => b.amt - a.amt) };
 }
 
+/** Chai leak inside one calendar month only. */
+export function chaiLeakFor(state: AppState, month: string) {
+  const small = debits(state.txns).filter(
+    (t) => t.kind === "upi" && t.amount <= 250 && ["Snacks/Chai", "Other", "Groceries", "Food delivery", "Transport"].includes(t.category) && t.date.startsWith(month),
+  );
+  return { monthly: small.reduce((a, t) => a + t.amount, 0), count: small.length };
+}
+
+/** The app as it looked at the end of `month`: later transactions hidden. */
+export function asOfMonth(state: AppState, month: string): AppState {
+  return { ...state, txns: state.txns.filter((t) => t.date.slice(0, 7) <= month) };
+}
+
+export const days = (n: number) => `${n} day${Math.abs(n) === 1 ? "" : "s"}`;
+
+/** Clean up AI text: Rs/INR → ₹, Indian digit grouping, ISO dates → "15 Mar 2027". */
+export function tidyMoney(t: string): string {
+  return t
+    .replace(/\b(?:Rs\.?|INR)\s?(?=\d)/g, "₹")
+    .replace(/₹\s?(\d[\d,]*)(\.\d+)?/g, (_m, n: string, dec?: string) => {
+      const v = parseFloat(n.replace(/,/g, "") + (dec ?? ""));
+      return isNaN(v) ? _m : inr(v);
+    })
+    .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (m, y, mo, d) => {
+      const x = new Date(`${y}-${mo}-${d}T00:00:00`);
+      return isNaN(+x) ? m : x.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    });
+}
+
 export function monthsBetween(a: string, b: string) {
   return (+new Date(b) - +new Date(a)) / (864e5 * 30.44);
 }
@@ -138,8 +167,15 @@ export interface Scenario {
 }
 export const BASE: Scenario = { foodCut: 0, leakCut: 0, shoppingCut: 0, rentHike: 0, incomeHike: 0, extraSip: 0, cancelSubs: 0 };
 
+const NEVER = "9999-12-31";
+/** "Mar 2027", or "Never at this rate" when savings can't reach the goal. */
+export function etaLabel(g: { eta: string; never: boolean }, day = false): string {
+  if (g.never) return "Never at this rate";
+  return new Date(g.eta).toLocaleDateString("en-IN", day ? { day: "numeric", month: "short", year: "numeric" } : { month: "short", year: "numeric" });
+}
+
 export interface Projection {
-  goals: { goal: Goal; eta: string; onTrack: boolean; deltaDays: number; monthly: number }[];
+  goals: { goal: Goal; eta: string; never: boolean; onTrack: boolean; deltaDays: number; monthly: number }[];
   surplus: number;
   series: { month: string; base: number; scenario: number }[];
 }
@@ -181,13 +217,15 @@ export function simulate(state: AppState, sc: Scenario, withFacts = true): Proje
         const frac = (need - prev) / (series[i] * g.weight - prev || 1);
         return addMonths(TODAY, i + frac);
       }
-      return addMonths(TODAY, 24 + (need - series[23] * g.weight) / ((series[23] / 24) * g.weight || 1));
+      if (series[23] <= 0 || g.weight <= 0) return NEVER;
+      return addMonths(TODAY, 24 + (need - series[23] * g.weight) / ((series[23] / 24) * g.weight));
     };
     const eta = etaFor(scSeries);
     const baseEta = etaFor(baseSeries);
+    const never = eta === NEVER;
     return {
-      goal: g, eta, onTrack: eta <= g.date,
-      deltaDays: Math.round((+new Date(baseEta) - +new Date(eta)) / 864e5),
+      goal: g, eta, never, onTrack: !never && eta <= g.date,
+      deltaDays: never || baseEta === NEVER ? 0 : Math.round((+new Date(baseEta) - +new Date(eta)) / 864e5),
       monthly: (scSeries[0]) * g.weight,
     };
   });
@@ -254,23 +292,23 @@ export function nudges(state: AppState): Nudge[] {
     if (p.ratio > 1.15) {
       const over = p.spent - p.expected;
       const proj = (p.spent / 21) * 30 - p.avg;
-      const days = goa >= 0 ? daysGainedOnGoal(state, goa, Math.max(proj, 0)) : 0;
+      const dd = goa >= 0 ? daysGainedOnGoal(state, goa, Math.max(proj, 0)) : 0;
       out.push({
         emoji: "", tone: "warn",
         title: roast ? `${p.category} is in its villain era` : `${p.category} running a little hot`,
         body: roast
-          ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days} days.${/food|dining|groceries|snacks/i.test(p.category) ? " The kitchen misses you bestie." : /shopping/i.test(p.category) ? " The cart can wait, bestie." : ""}`
-          : `You're ${Math.round((p.ratio - 1) * 100)}% ahead of your usual pace. Easing off for 9 days keeps Goa on schedule (~${days} days saved). You got this!`,
+          ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days(dd)}.${/food|dining|groceries|snacks/i.test(p.category) ? " The kitchen misses you bestie." : /shopping/i.test(p.category) ? " The cart can wait, bestie." : ""}`
+          : `You're ${Math.round((p.ratio - 1) * 100)}% ahead of your usual pace. Easing off for 9 days keeps Goa on schedule (~${days(dd)} saved). You got this!`,
       });
     }
   }
   const recs = detectRecurring(state);
   const pc = recs.find((r) => r.status === "price_changed");
-  if (pc) out.push({ emoji: "", tone: "warn", title: `${pc.merchant} raised its price`, body: `${pc.note}. That's ${inr((pc.last - pc.prev) * 12)}/year extra for the same shows.` });
+  if (pc) out.push({ emoji: "", tone: "warn", title: `${pc.merchant} plan went up`, body: `${pc.note}. That's ${inr((pc.last - pc.prev) * 12)}/year extra. Price hike or a plan upgrade? Worth a look.` });
   const un = recs.find((r) => r.status === "unused" && !state.cancelled.includes(r.merchant));
   if (un) out.push({ emoji: "", tone: "warn", title: roast ? `${un.merchant} is ghosting your body, not your bank` : `${un.merchant} might be unused`, body: `${inr(un.last)}/month and ${un.note?.toLowerCase()}` });
   const leak = chaiLeak(state);
-  out.push({ emoji: "", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. Halving it gets Goa ${goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0} days sooner.` });
+  out.push({ emoji: "", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. Halving it gets Goa ${days(goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0)} sooner.` });
   return out;
 }
 

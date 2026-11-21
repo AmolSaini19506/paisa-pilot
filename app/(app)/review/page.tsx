@@ -4,7 +4,7 @@ import { useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import { CatIcon, GoalIcon } from "@/components/Icons";
 import { agentContext, ai, useStore } from "@/lib/store";
-import { chaiLeak, detectRecurring, healthScore, inr, monthLabel, monthStats, simulate, BASE } from "@/lib/twin";
+import { asOfMonth, chaiLeakFor, detectRecurring, healthScore, inr, monthLabel, monthStats, simulate, BASE, etaLabel, tidyMoney } from "@/lib/twin";
 import type { AppState } from "@/lib/types";
 
 function md(s: string) {
@@ -31,8 +31,8 @@ function md(s: string) {
 
 function templateReview(state: AppState, month: string) {
   const s = monthStats(state, month);
-  const leak = chaiLeak(state);
-  const recs = detectRecurring(state).filter((r) => r.status !== "active");
+  const leak = chaiLeakFor(state, month);
+  const recs = detectRecurring(asOfMonth(state, month)).filter((r) => r.status !== "active");
   const proj = simulate(state, BASE);
   const roast = state.voice === "roast";
   const over = Object.entries(s.cats).map(([k, v]) => ({ k, v, d: v - (s.avg[k] ?? v) })).sort((a, b) => b.d - a.d);
@@ -53,7 +53,7 @@ ${roast ? `${monthLabel(month)} was giving "I deserve this" energy.` : `${monthL
 ${recs.map((r) => `- ${r.merchant}: ${r.note}`).join("\n") || "- All subscriptions look used and stable"}
 
 ## Goal runway
-${proj.goals.map((g) => `- ${g.goal.name}: ${g.onTrack ? "on track" : "running late"} (ETA ${new Date(g.eta).toLocaleDateString("en-IN", { month: "short", year: "numeric" })})`).join("\n")}
+${proj.goals.map((g) => `- ${g.goal.name}: ${g.onTrack ? "on track" : "running late"} (ETA ${etaLabel(g)})`).join("\n")}
 
 ## Next month's 3 moves
 1. Cap food delivery at 9 orders (≈ ₹1,500 saved → Goa ~12 days sooner)
@@ -68,14 +68,14 @@ export default function Review() {
   const [play, setPlay] = useState(false);
   const s = monthStats(state, month);
   const hs = healthScore(state);
-  const leak = chaiLeak(state);
+  const leak = chaiLeakFor(state, month);
   const review = state.review?.month === month ? state.review : null;
 
   const gen = async () => {
     setBusy(true);
-    const ctx = agentContext(state);
-    const stats = { month, income: s.inc, spent: s.out, saved: s.saved, byCategory: Object.fromEntries(Object.entries(s.cats).map(([k, v]) => [k, Math.round(v)])), threeMonthAvg: ctx.avg, topMerchant: s.topMerchant, biggestSpend: s.biggest && { merchant: s.biggest.merchant, amount: s.biggest.amount }, count: s.count, chaiLeakMonthly: ctx.leak };
-    const goals = simulate(state, BASE).goals.map((g) => ({ name: g.goal.name, target: g.goal.date, eta: g.eta, onTrack: g.onTrack }));
+    const ctx = agentContext(asOfMonth(state, month));
+    const stats = { month, income: s.inc, spent: s.out, saved: s.saved, byCategory: Object.fromEntries(Object.entries(s.cats).map(([k, v]) => [k, Math.round(v)])), threeMonthAvg: ctx.avg, topMerchant: s.topMerchant, biggestSpend: s.biggest && { merchant: s.biggest.merchant, amount: s.biggest.amount }, count: s.count, chaiLeakMonthly: Math.round(leak.monthly), chaiLeakCount: leak.count };
+    const goals = simulate(state, BASE).goals.map((g) => ({ name: g.goal.name, target: g.goal.date, eta: g.never ? "never at this rate" : g.eta, onTrack: g.onTrack }));
     const r = await ai<string>("review", { stats, ctx: { ...ctx.twin, goalsRunway: goals, recurring: ctx.recurring }, voice: state.voice });
     const text = r.data || templateReview(state, month);
     const traceId = addTrace(`Monthly review: ${monthLabel(month)}`, r.trace.length ? r.trace : [{ agent: "Reviewer", action: "Template review" }]);
@@ -119,7 +119,7 @@ export default function Review() {
               <button className="btn sm purple" onClick={gen} disabled={busy}>{busy ? "writing…" : review ? "Regenerate" : "Generate review "}</button>
             </div>
           </div>
-          {review ? <div className="md popin" dangerouslySetInnerHTML={{ __html: md(review.text) }} /> : (
+          {review ? <div className="md popin" dangerouslySetInnerHTML={{ __html: md(tidyMoney(review.text)) }} /> : (
             <p className="muted" style={{ marginTop: 20 }}>Hit generate. The Reviewer agent pulls stats, subscriptions and goal runway, then writes it in your coach voice ({state.voice === "roast" ? "roast 🔥" : "hype 💜"}).</p>
           )}
         </div>

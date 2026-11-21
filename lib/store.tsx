@@ -59,7 +59,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (ok) { setAuthed(true); try { localStorage.setItem(AUTH, "1"); } catch {} }
     return ok;
   }, []);
-  const logout = useCallback(() => { setAuthed(false); try { localStorage.removeItem(AUTH); } catch {} }, []);
+  const logout = useCallback(() => { setAuthed(false); setState(initialState()); try { localStorage.removeItem(AUTH); localStorage.removeItem(KEY); } catch {} }, []);
   const toast = useCallback((msg: string, emoji = "✨") => {
     const id = ++tid.current;
     setToasts((t) => [...t, { id, msg, emoji }]);

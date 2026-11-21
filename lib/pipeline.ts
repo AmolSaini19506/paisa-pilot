@@ -1,5 +1,5 @@
 import { buildMemory, categorize } from "./categorize";
-import { dedupeKey, parseSms, parseStatementLine, prettyMerchant, type ParsedSms } from "./parser";
+import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, redactRaw, TODAY, type ParsedSms } from "./parser";
 import { ai } from "./store";
 import type { AppState, TraceStep, Txn } from "./types";
 import { computeTwin, detectRecurring, inr } from "./twin";
@@ -52,6 +52,13 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
     if (det) st("Ingest", `Statement-row parser recovered ${det} line(s)`);
   }
 
+  // 2b. sanity: drop impossible dates, future dates and zero amounts
+  for (let i = good.length - 1; i >= 0; i--) {
+    const p = good[i];
+    const why = !(p.amount! > 0) ? "Amount is ₹0, nothing to track " : !isValidTxnDate(p.date) ? (p.date && p.date > TODAY ? "Date is in the future " : "Date doesn't exist ") : "";
+    if (why) { skipped.push({ raw: p.raw, why }); good.splice(i, 1); }
+  }
+
   // 3. dedupe (wallet + bank double alerts, re-imports)
   const seen = new Set(state.txns.map((t) => dedupeKey(t)));
   const fresh: ParsedSms[] = [];
@@ -101,5 +108,7 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   if (Math.abs(now.surplus - before.surplus) > 1) diff.push(`Surplus estimate ${inr(before.surplus)} → ${inr(now.surplus)}`);
   st("Twin builder", "Updated Money Twin + wrote memory diff", diff.join(" | "));
 
+  // privacy: never keep the full SMS (balances, account numbers)
+  txns.forEach((t) => { t.raw = redactRaw(t.raw); });
   return { added: txns, skipped, steps, diff, llmUsed };
 }

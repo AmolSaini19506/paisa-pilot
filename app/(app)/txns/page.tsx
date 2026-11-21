@@ -99,7 +99,7 @@ export default function Txns() {
             <TraceButton id={prop.traceId} />
           </div>
           <p style={{ fontSize: 17 }}>
-            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b>{prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#0b0b0b", color: "var(--lime)", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b><CatIcon c={prop.category} />{prop.category}</b>
+            All <b>{prop.rule.field === "vpa" ? "UPI IDs" : "merchants"}</b>{" "}{prop.rule.type === "prefix" ? "starting with" : prop.rule.type === "equals" ? "equal to" : "containing"} <code style={{ background: "#0b0b0b", color: "var(--lime)", padding: "2px 6px", borderRadius: 6 }}>{prop.rule.pattern}</code> → <b><CatIcon c={prop.category} />{prop.category}</b>
           </p>
           <p style={{ opacity: 0.9 }}>{prop.rule.why} {prop.llm ? "· proposed by the AI agent" : ""}</p>
           <div className="row wrap">
@@ -123,6 +123,13 @@ export default function Txns() {
           <table>
             <thead><tr><th>Date</th><th>Merchant</th><th>Amount</th><th>Category</th><th className="hide-m">Vibe</th></tr></thead>
             <tbody>
+              {!list.length && (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: "32px 12px" }}>
+                  <div style={{ fontWeight: 600 }}>No transactions found</div>
+                  <div className="small muted" style={{ marginTop: 4 }}>{state.txns.length ? "Try a different search or category." : "Import your bank SMS or a statement to get started."}</div>
+                  {(q || filter !== "all") && <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => { setQ(""); setFilter("all"); }}>Clear filters</button>}
+                </td></tr>
+              )}
               {list.slice(0, limit).map((t) => (
                 <tr key={t.id} className={flash.has(t.id) ? "flash" : ""}>
                   <td className="mono">{t.date.slice(5)}</td>

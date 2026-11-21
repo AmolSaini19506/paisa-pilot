@@ -5,7 +5,7 @@ import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
 import { CalendarRange, Coffee, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
 import { Num, useSpring } from "@/components/Motion";
 import { useStore } from "@/lib/store";
-import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE } from "@/lib/twin";
+import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE, days, etaLabel } from "@/lib/twin";
 
 function Ring({ score: target }: { score: number }) {
   const score = useSpring(target, 0.9);
@@ -102,7 +102,7 @@ export default function Home() {
           </div>
           {goaIdx >= 0 && (
             <div className="small" style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: "var(--lime-wash)" }}>
-              Halve it and Goa comes <b>{daysGainedOnGoal(state, goaIdx, leak.monthly / 2)} days sooner</b>. Stop it and it&apos;s <b>{daysGainedOnGoal(state, goaIdx, leak.monthly)} days</b>.
+              Halve it and Goa comes <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly / 2))} sooner</b>. Stop it and it&apos;s <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly))}</b>.
             </div>
           )}
         </div>
@@ -141,11 +141,11 @@ export default function Home() {
         </section>
         <section className="open">
           <div className="row between"><h2><span className="sticker-emoji">🏝️</span> Goals runway</h2><Link href="/goals" className="btn sm ghost">What-if</Link></div>
-          {proj.goals.map(({ goal, eta, onTrack }) => (
+          {proj.goals.map(({ goal, eta, never, onTrack }) => (
             <div key={goal.id} style={{ marginTop: 16 }}>
-              <div className="row between"><span style={{ fontWeight: 500 }}><GoalIcon id={goal.id} />{goal.name}</span><span className={`chip ${onTrack ? "lime" : "red"}`}>{onTrack ? "On track" : "Late"}</span></div>
+              <div className="row between"><span style={{ fontWeight: 500 }}><GoalIcon id={goal.id} />{goal.name}</span><span className={`chip ${onTrack ? "lime" : "red"}`}>{onTrack ? "On track" : never ? "Stuck" : "Late"}</span></div>
               <div className="bar" style={{ marginTop: 8 }}><div style={{ width: `${(goal.saved / goal.target) * 100}%`, background: "var(--purple)" }} /></div>
-              <div className="small muted" style={{ marginTop: 6 }}>{inr(goal.saved)} of {inr(goal.target)} · ETA {new Date(eta).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}, target {new Date(goal.date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
+              <div className="small muted" style={{ marginTop: 6 }}>{inr(goal.saved)} of {inr(goal.target)} · {etaLabel({ eta, never }).replace(/^(?!Never)/, "ETA ")}, target {new Date(goal.date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}</div>
             </div>
           ))}
         </section>
