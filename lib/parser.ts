@@ -185,7 +185,7 @@ export function parseCsvRows(rows: Record<string, string>[]): ParsedSms[] {
     out.push({
       ok: true, smsKind: dir === "debit" ? "debit" : "credit", amount, dir,
       kind: /upi/i.test(narr) ? "upi" : /nach|ach|si-/i.test(narr) ? "autodebit" : "neft",
-      date: parseDate(r[dK]), vpa, merchant: prettyMerchant(narr.replace(/^upi[-/]/i, "").split(/[-/]/)[0] || narr, vpa),
+      date: parseDate(r[dK]), vpa, merchant: prettyMerchant(narr.replace(/^upi[-/]/i, "").replace(/^(neft|imps|rtgs)( cr| dr)?[-/ ]+/i, "").replace(/^(refund|reversal)[-/ ]+/i, "").split(/[-/]/)[0] || narr, vpa),
       raw: narr,
     });
   }

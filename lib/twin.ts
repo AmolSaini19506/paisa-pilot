@@ -356,9 +356,13 @@ export function monthStats(state: AppState, month: string) {
 export function monthLeft(state: AppState) {
   const usual = computeTwin(state).surplus;
   const drift = paceCheck(state).reduce((a, p) => a + ((p.spent * p.avg) / (p.expected || 1) - p.avg), 0);
-  // a refund this month gives back money the pace check counted as spent
+  // a refund this month gives back money the pace check counted as spent, so only count refunds
+  // we can tie (by merchant) to a purchase in a paced category; others never entered the projection
   const thisMonth = TODAY.slice(0, 7);
-  const refunds = state.txns.filter((t) => t.dir === "credit" && t.category === "Refund" && t.date.startsWith(thisMonth)).reduce((a, t) => a + t.amount, 0);
+  const paced = new Set(paceCheck(state).map((p) => p.category));
+  const key = (m: string) => m.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !/^(refund|neft|imps|upi|reversal|reversed|cr|dr)$/.test(w));
+  const tied = (r: { merchant: string }) => { const rk = key(r.merchant); return rk.length > 0 && state.txns.some((d) => d.dir === "debit" && paced.has(d.category) && d.date.startsWith(thisMonth) && key(d.merchant).some((w) => rk.includes(w))); };
+  const refunds = state.txns.filter((t) => t.dir === "credit" && t.category === "Refund" && t.date.startsWith(thisMonth) && tied(t)).reduce((a, t) => a + t.amount, 0);
   const projected = Math.round(usual - drift + refunds);
   return { usual, projected, ratio: usual > 0 ? projected / usual : 0.4 };
 }

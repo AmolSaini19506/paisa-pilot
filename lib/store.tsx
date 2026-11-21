@@ -40,7 +40,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (s.version === 3) setState({ ...s, txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: "", merchant: t.merchant.replace(/^BharatPe merchant (\d+)$/, "BharatPe $1") })) });
+        const rename = (m: string) => m.replace(/^BharatPe merchant (\d+)$/, "BharatPe $1");
+        if (s.version === 3) setState({ ...s, cancelled: (s.cancelled ?? []).map(rename), txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: "", merchant: rename(t.merchant) })) });
       }
       const tok = localStorage.getItem(AUTH);
       setAuthed(!!tok && tok !== "1");
@@ -131,7 +132,7 @@ export function agentContext(state: AppState) {
   const latest = state.txns.reduce((m, t) => (t.date.slice(0, 7) > m ? t.date.slice(0, 7) : m), "");
   const merchantTotals: Record<string, { total: number; count: number }> = {};
   for (const t of state.txns) if (t.dir === "debit" && t.date.startsWith(latest)) { const e = (merchantTotals[t.merchant] ??= { total: 0, count: 0 }); e.total += t.amount; e.count++; }
-  const ranked = Object.entries(merchantTotals).sort((a, b) => b[1].total - a[1].total).map(([merchant, v]) => ({ merchant, total: Math.round(v.total), count: v.count }));
+  const ranked = Object.entries(merchantTotals).sort((a, b) => b[1].total - a[1].total).map(([merchant, v]) => ({ merchant, total: Math.round(v.total * 100) / 100, count: v.count }));
   const months: Record<string, Record<string, number>> = {};
   for (const m of ["2026-08", "2026-09", "2026-10", "2026-11"]) months[m] = round(byCategory(state.txns, m));
   return {

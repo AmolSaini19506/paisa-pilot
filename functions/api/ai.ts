@@ -232,7 +232,7 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
             const all = ctx.merchantsThisMonth?.all ?? ctx.merchantsThisMonth?.top ?? [];
             const q = String(a.merchant ?? "").toLowerCase().trim();
             const hits = q ? all.filter((m: any) => m.merchant.toLowerCase().includes(q)) : all;
-            out = { month: ctx.merchantsThisMonth?.month, merchants: hits.length ? hits : all.slice(0, 10), note: hits.length || !q ? "exact totals" : `no merchant matched "${a.merchant}"` };
+            out = { month: ctx.merchantsThisMonth?.month, merchants: q && hits.length ? hits.slice(0, 10) : all.slice(0, 10), note: hits.length || !q ? "exact totals" : `no merchant matched "${a.merchant}"` };
           }
           else if (c.name === "simulate") out = runSim(ctx, a);
           else if (c.name === "remember_fact" && a.fact && /remember|from|next|going|will|plan|wedding|shaadi|hike|joining|moving|baby|loan|rent/i.test(last)) { facts.push({ fact: a.fact, date: a.date }); out = { saved: true }; }

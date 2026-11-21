@@ -10,6 +10,20 @@ export function ruleMatches(r: Rule, t: Pick<Txn, "vpa" | "merchant" | "raw">): 
   return v.includes(p);
 }
 
+/** True when every transaction rule `a` matches is guaranteed to match rule `b` (a is the same or narrower). */
+export function implies(a: Pick<Rule, "field" | "type" | "pattern">, b: Pick<Rule, "field" | "type" | "pattern">): boolean {
+  if (a.field !== b.field) return false;
+  const A = a.pattern.toLowerCase().trim(), B = b.pattern.toLowerCase().trim();
+  if (!A || !B) return false;
+  if (b.type === "equals") return a.type === "equals" && A === B;
+  if (b.type === "prefix") {
+    if (a.type === "prefix") return A.startsWith(B);
+    if (a.type === "equals") return b.field === "vpa" ? A.startsWith(B) : A.split(/\s+/).some((w) => w.startsWith(B));
+    return false;
+  }
+  return A.includes(B); // b is "contains": any a whose matched text always contains A also contains B
+}
+
 export function categorize(
   t: Pick<Txn, "vpa" | "merchant" | "raw" | "dir">,
   rules: Rule[],
@@ -20,6 +34,8 @@ export function categorize(
   const mem = memory.get(mk);
   if (mem) return { category: mem, src: "memory", conf: 0.95 };
   const text = `${t.merchant} ${t.vpa ?? ""} ${t.raw}`;
+  // "REFUND AMAZON" is money back, not a Shopping credit: check refunds before merchant names
+  if (t.dir === "credit" && /refund|reversed|reversal/i.test(text)) return { category: "Refund", src: "seed", conf: 0.9 };
   for (const [re, c] of SEED_MAP) if (re.test(text)) return { category: c, src: "seed", conf: 0.9 };
   if (t.dir === "credit") return { category: "Refund", src: "seed", conf: 0.4 };
   return { category: "Other", src: "seed", conf: 0.2 };

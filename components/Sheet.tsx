@@ -29,11 +29,11 @@ export default function Sheet({ open, onClose, title, children }: { open: boolea
     if (!mounted) return;
     const opener = document.activeElement as HTMLElement | null;
     const el = panel.current;
-    const focusables = () => el ? [...el.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hasAttribute("disabled")) : [];
+    const focusables = () => el ? [...el.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]')].filter((x) => x.tabIndex >= 0 && !x.hasAttribute("disabled") && x.getClientRects().length > 0) : [];
     (focusables()[0] ?? el)?.focus();
     const trap = (e: KeyboardEvent) => {
       if (e.key !== "Tab") return;
-      const f = focusables(); if (!f.length) return;
+      const f = focusables(); if (!f.length) { e.preventDefault(); el?.focus(); return; }
       const first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }

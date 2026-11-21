@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import { CATEGORIES } from "@/lib/categories";
 import { CatIcon } from "@/components/Icons";
-import { accuracy, AGGREGATOR, proposeRule, ruleMatches } from "@/lib/categorize";
+import { accuracy, implies, proposeRule, ruleMatches } from "@/lib/categorize";
 import { ai, useStore } from "@/lib/store";
 import type { Rule, Txn } from "@/lib/types";
 import { inr, vibe } from "@/lib/twin";
@@ -45,9 +45,8 @@ export default function Txns() {
     const llmRule = r.data?.pattern ? { field: r.data.field ?? cand.field, type: r.data.type ?? cand.type, pattern: String(r.data.pattern).toLowerCase(), category, why: r.data.why ?? cand.why } : null;
     // a rule on a payment aggregator (BharatPe, Paytm QR...) would sweep up unrelated shops: keep the narrow one
     const local = { field: cand.field, type: cand.type, pattern: cand.pattern.toLowerCase(), category, why: cand.why };
-    const hits = (r0: typeof local) => state.txns.filter((x) => x.dir === "debit" && ruleMatches({ ...r0, id: "", createdAt: "", hits: 0 } as Rule, x)).length;
-    // the AI may only narrow the local rule, never widen it (no aggregator names, bank handles or tiny fragments)
-    const safe = llmRule && llmRule.pattern.trim().length >= 4 && !llmRule.pattern.includes("@") && !AGGREGATOR.test(llmRule.pattern.trim()) && hits(llmRule as typeof local) <= hits(local);
+    // the AI may only narrow the local rule: anything its rule matches must also match the local one, today and on future imports
+    const safe = !!llmRule && implies(llmRule, local);
     const rule = safe ? llmRule! : local;
     const matches = state.txns.filter((x) => x.id !== t.id && x.dir === "debit" && ruleMatches({ ...rule, id: "", createdAt: "", hits: 0 }, x) && x.category !== category).length;
     const traceId = addTrace(`Correction: ${t.merchant} → ${category}`, [
