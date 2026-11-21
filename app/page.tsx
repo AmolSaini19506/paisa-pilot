@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { JUDGE_EMAIL, JUDGE_PW, useStore } from "@/lib/store";
 
 export default function Login() {
@@ -9,15 +9,22 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
+  const pending = useRef(false);
   useEffect(() => { if (ready && authed) router.replace("/home"); }, [ready, authed, router]);
 
-  const go = (e?: React.FormEvent, em = email, p = pw) => {
+  const go = async (e?: React.FormEvent, em = email, p = pw) => {
     e?.preventDefault();
     if (!em.trim()) return setErr("Enter your email to log in.");
     if (!/^\S+@\S+\.\S+$/.test(em.trim())) return setErr("That email doesn't look right. Check for typos.");
     if (!p) return setErr("Enter your password.");
-    if (login(em, p)) router.replace("/home");
-    else setErr("Wrong email or password. Use the judge login below.");
+    if (pending.current) return;
+    pending.current = true;
+    setErr("");
+    try {
+      const e2 = await login(em, p);
+      if (e2) setErr(e2);
+      else router.replace("/home");
+    } finally { pending.current = false; }
   };
 
   return (

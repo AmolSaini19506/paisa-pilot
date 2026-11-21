@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { initialState } from "./seed";
+import { rawTags } from "./parser";
 import type { AppState, Trace, TraceStep } from "./types";
 import { avgByCategory, byCategory, chaiLeak, computeTwin, detectRecurring, healthScore, monthLeft } from "./twin";
 
@@ -11,7 +12,7 @@ interface Ctx {
   state: AppState;
   ready: boolean;
   authed: boolean;
-  login: (email: string, pw: string) => boolean;
+  login: (email: string, pw: string) => Promise<string | null>;
   logout: () => void;
   update: (fn: (s: AppState) => AppState) => void;
   reset: () => void;
@@ -40,9 +41,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (s.version === 3) setState({ ...s, txns: (s.txns ?? []).map((t: { raw?: string }) => ({ ...t, raw: "" })) });
+        const rename = (m: string) => m.replace(/^BharatPe merchant (\d+)$/, "BharatPe $1");
+        if (s.version === 3) setState({ ...s, cancelled: (s.cancelled ?? []).map(rename), txns: (s.txns ?? []).map((t: { raw?: string; merchant: string }) => ({ ...t, raw: rawTags(t.raw), merchant: rename(t.merchant) })) });
       }
-      setAuthed(localStorage.getItem(AUTH) === "1");
+      const tok = localStorage.getItem(AUTH);
+      setAuthed(!!tok && tok !== "1");
     } catch {}
     setReady(true);
   }, []);
@@ -54,10 +57,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const update = useCallback((fn: (s: AppState) => AppState) => setState((s) => fn(s)), []);
   const reset = useCallback(() => setState(initialState()), []);
-  const login = useCallback((email: string, pw: string) => {
-    const ok = email.trim().toLowerCase() === JUDGE_EMAIL && pw === JUDGE_PW;
-    if (ok) { setAuthed(true); try { localStorage.setItem(AUTH, "1"); } catch {} }
-    return ok;
+  /** Checks the password on the server and keeps its signed session token. Returns an error message, or null on success. */
+  const login = useCallback(async (email: string, pw: string) => {
+    try {
+      const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password: pw }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.token) return j.error ?? "Wrong email or password.";
+      try { localStorage.setItem(AUTH, j.token); } catch { return "Your browser blocked saving the login. Turn off private mode or allow site data, then try again."; }
+      setAuthed(true);
+      return null;
+    } catch {
+      return "Can't reach the server. Check your connection and try again.";
+    }
   }, []);
   const logout = useCallback(() => { setAuthed(false); setState(initialState()); try { localStorage.removeItem(AUTH); localStorage.removeItem(KEY); } catch {} }, []);
   const toast = useCallback((msg: string, emoji = "✨") => {
@@ -85,9 +96,27 @@ export function useStore() {
   return c;
 }
 
+export function authHeaders(h: Record<string, string> = {}): Record<string, string> {
+  try { const t = localStorage.getItem(AUTH); if (t) h.authorization = `Bearer ${t}`; } catch {}
+  return h;
+}
+
+function currentToken(): string | null {
+  try { return localStorage.getItem(AUTH); } catch { return null; }
+}
+
+/** Log out only if the token that failed is still the current one (a newer login must survive an old 401). */
+export function sessionExpired(failedToken: string | null) {
+  if (failedToken !== currentToken()) return;
+  try { localStorage.removeItem(AUTH); } catch {}
+  if (typeof window !== "undefined" && window.location.pathname !== "/") window.location.href = "/";
+}
+
 export async function ai<T = any>(task: string, payload: any): Promise<{ data: T; trace: TraceStep[]; llm: boolean; error?: string }> {
   try {
-    const r = await fetch("/api/ai", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ task, payload }) });
+    const token = currentToken();
+    const r = await fetch("/api/ai", { method: "POST", headers: authHeaders({ "content-type": "application/json" }), body: JSON.stringify({ task, payload }) });
+    if (r.status === 401) sessionExpired(token);
     const j = await r.json();
     return { data: j.data, trace: j.trace ?? [], llm: !!j.llm, error: j.error };
   } catch (e: any) {
@@ -99,6 +128,12 @@ export async function ai<T = any>(task: string, payload: any): Promise<{ data: T
 export function agentContext(state: AppState) {
   const twin = computeTwin(state);
   const hs = healthScore(state);
+  const recurring = detectRecurring(state).filter((r) => !state.cancelled.includes(r.merchant)).map((r) => ({ merchant: r.merchant, amount: r.last, status: r.status, note: r.note }));
+  // exact per-merchant totals for the latest month, so the coach never passes an average off as a total
+  const latest = state.txns.reduce((m, t) => (t.date.slice(0, 7) > m ? t.date.slice(0, 7) : m), "");
+  const merchantTotals: Record<string, { total: number; count: number }> = {};
+  for (const t of state.txns) if (t.dir === "debit" && t.date.startsWith(latest)) { const e = (merchantTotals[t.merchant] ??= { total: 0, count: 0 }); e.total += t.amount; e.count++; }
+  const ranked = Object.entries(merchantTotals).sort((a, b) => b[1].total - a[1].total).map(([merchant, v]) => ({ merchant, total: Math.round(v.total * 100) / 100, count: v.count }));
   const months: Record<string, Record<string, number>> = {};
   for (const m of ["2026-08", "2026-09", "2026-10", "2026-11"]) months[m] = round(byCategory(state.txns, m));
   return {
@@ -108,13 +143,15 @@ export function agentContext(state: AppState) {
       variable: Math.round(twin.variable), surplus: monthLeft(state).projected, usualSurplus: Math.round(twin.surplus), efMonths: +twin.efMonths.toFixed(1),
       emergencyFund: state.profile.emergencyFund, healthScore: hs.score,
       goals: state.goals, memoryFacts: state.facts.map((f) => f.text),
-      recurring: detectRecurring(state).map((r) => ({ merchant: r.merchant, amount: r.last, status: r.status, note: r.note })),
+      recurring,
+      cancelledSubscriptions: state.cancelled,
     },
     goals: state.goals,
     avg: round(avgByCategory(state.txns)),
     months,
     leak: Math.round(chaiLeak(state).monthly),
-    recurring: detectRecurring(state).map((r) => ({ merchant: r.merchant, amount: r.last, status: r.status, note: r.note })),
+    recurring,
+    merchantsThisMonth: { month: latest, top: ranked.slice(0, 25), all: ranked },
   };
 }
 function round(o: Record<string, number>) {

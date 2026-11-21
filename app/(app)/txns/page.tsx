@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import { CATEGORIES } from "@/lib/categories";
 import { CatIcon } from "@/components/Icons";
-import { accuracy, proposeRule, ruleMatches } from "@/lib/categorize";
+import { accuracy, implies, proposeRule, ruleMatches } from "@/lib/categorize";
 import { ai, useStore } from "@/lib/store";
 import type { Rule, Txn } from "@/lib/types";
 import { inr, vibe } from "@/lib/twin";
@@ -25,7 +25,13 @@ export default function Txns() {
     let l = state.txns;
     if (filter === "review") l = l.filter((t) => t.review || (t.category === "Other" && t.dir === "debit"));
     else if (filter !== "all") l = l.filter((t) => t.category === filter);
-    if (q) l = l.filter((t) => `${t.merchant} ${t.vpa ?? ""} ${t.category}`.toLowerCase().includes(q.toLowerCase()));
+    const needle = q.trim().toLowerCase();
+    if (needle) {
+      const num = needle.replace(/[₹,\s]/g, "");
+      const isNum = /^\d+(\.\d+)?$/.test(num);
+      const exact = isNum && num.includes(".") ? parseFloat(num) : null;
+      l = l.filter((t) => `${t.merchant} ${t.vpa ?? ""} ${t.category}`.toLowerCase().includes(needle) || (isNum && (exact !== null ? t.amount === exact : String(t.amount).startsWith(num))));
+    }
     return l;
   }, [state.txns, filter, q]);
 
@@ -36,7 +42,12 @@ export default function Txns() {
     const cand = proposeRule(t, category, state.txns);
     const examples = state.txns.filter((x) => x.id !== t.id && ruleMatches({ ...cand, id: "", createdAt: "", hits: 0 }, x)).slice(0, 6).map((x) => ({ merchant: x.merchant, vpa: x.vpa, amount: x.amount, category: x.category }));
     const r = await ai<any>("rule", { txn: t, category, candidate: cand, examples });
-    const rule = { field: r.data?.field ?? cand.field, type: r.data?.type ?? cand.type, pattern: (r.data?.pattern ?? cand.pattern).toLowerCase(), category, why: r.data?.why ?? cand.why };
+    const llmRule = r.data?.pattern ? { field: r.data.field ?? cand.field, type: r.data.type ?? cand.type, pattern: String(r.data.pattern).toLowerCase(), category, why: r.data.why ?? cand.why } : null;
+    // a rule on a payment aggregator (BharatPe, Paytm QR...) would sweep up unrelated shops: keep the narrow one
+    const local = { field: cand.field, type: cand.type, pattern: cand.pattern.toLowerCase(), category, why: cand.why };
+    // the AI may only narrow the local rule: anything its rule matches must also match the local one, today and on future imports
+    const safe = !!llmRule && implies(llmRule, local);
+    const rule = safe ? llmRule! : local;
     const matches = state.txns.filter((x) => x.id !== t.id && x.dir === "debit" && ruleMatches({ ...rule, id: "", createdAt: "", hits: 0 }, x) && x.category !== category).length;
     const traceId = addTrace(`Correction: ${t.merchant} → ${category}`, [
       { agent: "Rule learner", action: "Captured user correction", detail: `${t.merchant}${t.vpa ? ` (${t.vpa})` : ""}: ${t.category} → ${category}` },
@@ -117,10 +128,11 @@ export default function Txns() {
             <option value="all">Any category</option>
             {CATEGORIES.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search merchant / UPI ID" style={{ maxWidth: 240 }} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search merchant, UPI ID or amount" style={{ maxWidth: 240 }} />
         </div>
         <div style={{ overflowX: "auto" }}>
-          <table>
+          {(q.trim() || filter !== "all") && list.length > 0 && <div className="small muted" style={{ margin: "0 0 8px" }}>Showing {list.length} of {state.txns.length}</div>}
+          <table className="txn-table">
             <thead><tr><th>Date</th><th>Merchant</th><th>Amount</th><th>Category</th><th className="hide-m">Vibe</th></tr></thead>
             <tbody>
               {!list.length && (
@@ -135,7 +147,7 @@ export default function Txns() {
                   <td className="mono">{t.date.slice(5)}</td>
                   <td>
                     <b>{t.merchant}</b>
-                    <div className="mono muted">{t.vpa ?? t.kind.toUpperCase()}</div>
+                    <div className="mono muted vpa">{t.vpa ?? t.kind.toUpperCase()}</div>
                   </td>
                   <td style={{ fontWeight: 600, color: t.dir === "credit" ? "var(--green)" : undefined }}>{t.dir === "credit" ? "+" : "-"}{inr(t.amount)}</td>
                   <td>

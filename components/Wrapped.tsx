@@ -49,7 +49,7 @@ export default function Wrapped({ state, month, onClose }: { state: AppState; mo
       </>) },
     { bg: "light", body: (
       <>
-        <div className="w-kicker">Your main character was</div>
+        <div className="w-kicker">Outside rent &amp; bills, your main character was</div>
         <div className="w-huge">{data.top?.[0] ?? "Nothing"}</div>
         <div className="w-num sm"><Num value={Math.round(data.top?.[1] ?? 0)} format={inr} /></div>
         <div className="w-sub">{data.vsUsual > 0 ? `${data.vsUsual}% more than your usual month.` : data.vsUsual < 0 ? `${-data.vsUsual}% less than your usual month. Growth.` : "Right on your usual."}</div>

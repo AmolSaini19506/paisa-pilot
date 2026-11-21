@@ -255,7 +255,10 @@ export function daysGainedOnGoal(state: AppState, goalIdx: number, monthly: numb
 export function healthScore(state: AppState) {
   const tw = computeTwin(state);
   const ef = Math.min(tw.efMonths / 6, 1) * 30;
-  const sr = Math.min(Math.max(tw.savingsRate, 0) / 0.3, 1) * 30;
+  // a bad month drags the savings rate down: use this month's pace when it's worse than usual
+  const left = monthLeft(state);
+  const rate = Math.min(tw.savingsRate, (left.projected + (tw.fixedItems.find((f) => f.name === "SIP/Investments")?.amount ?? 0)) / tw.income);
+  const sr = Math.min(Math.max(rate, 0) / 0.3, 1) * 30;
   const fixedRatio = tw.fixed / tw.income;
   const fx = Math.min(Math.max((0.6 - fixedRatio) / 0.3, 0), 1) * 20;
   const recs = detectRecurring(state);
@@ -267,7 +270,7 @@ export function healthScore(state: AppState) {
   const score = Math.round(ef + sr + fx + sub + pc);
   const parts = [
     { label: "Emergency buffer", pts: Math.round(ef), max: 30, note: `${tw.efMonths.toFixed(1)} of 6 months` },
-    { label: "Savings rate", pts: Math.round(sr), max: 30, note: `${Math.round(tw.savingsRate * 100)}% (goal 30%)` },
+    { label: "Savings rate", pts: Math.round(sr), max: 30, note: `${Math.round(rate * 100)}% (goal 30%)` },
     { label: "Fixed-cost load", pts: Math.round(fx), max: 20, note: `${Math.round(fixedRatio * 100)}% of income` },
     { label: "Subscription hygiene", pts: sub, max: 10, note: waste ? `${waste} ghost sub` : "clean" },
     { label: "On-plan pace", pts: pc, max: 10, note: drift ? `${drift} categories drifting` : "on pace" },
@@ -335,8 +338,10 @@ export function vibe(t: Txn): string {
 
 export function monthStats(state: AppState, month: string) {
   const ms = state.txns.filter((t) => monthKey(t.date) === month);
-  const inc = ms.filter((t) => t.dir === "credit").reduce((a, t) => a + t.amount, 0);
-  const out = ms.filter((t) => t.dir === "debit").reduce((a, t) => a + t.amount, 0);
+  // refunds give money back; they aren't income, so they reduce spend instead
+  const refunds = ms.filter((t) => t.dir === "credit" && t.category === "Refund").reduce((a, t) => a + t.amount, 0);
+  const inc = ms.filter((t) => t.dir === "credit" && t.category !== "Refund").reduce((a, t) => a + t.amount, 0);
+  const out = ms.filter((t) => t.dir === "debit").reduce((a, t) => a + t.amount, 0) - refunds;
   const cats = byCategory(state.txns, month);
   const avg = avgByCategory(state.txns);
   const top = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -350,7 +355,21 @@ export function monthStats(state: AppState, month: string) {
 /** This month's projected money left vs. the person's usual month. Drives both the money card and the mood colour. */
 export function monthLeft(state: AppState) {
   const usual = computeTwin(state).surplus;
-  const drift = paceCheck(state).reduce((a, p) => a + ((p.spent * p.avg) / (p.expected || 1) - p.avg), 0);
+  // a refund this month gives back money the pace check counted as spent. Only refunds from the same merchant
+  // as a paced purchase this month count, and they come off that category's spend before extrapolating.
+  const thisMonth = TODAY.slice(0, 7);
+  const pace = paceCheck(state);
+  const paced = new Set(pace.map((p) => p.category));
+  const id = (m: string) => m.toLowerCase().replace(/\b(refund|reversal|reversed|neft|imps|rtgs|upi|cr|dr)\b/g, "").replace(/[^a-z0-9]/g, "");
+  const purchaseCat = new Map<string, string>();
+  for (const d of state.txns) if (d.dir === "debit" && paced.has(d.category) && d.date.startsWith(thisMonth) && id(d.merchant)) purchaseCat.set(id(d.merchant), d.category);
+  const refundBy: Record<string, number> = {};
+  for (const t of state.txns) {
+    if (t.dir !== "credit" || t.category !== "Refund" || !t.date.startsWith(thisMonth)) continue;
+    const cat = purchaseCat.get(id(t.merchant));
+    if (cat) refundBy[cat] = (refundBy[cat] ?? 0) + t.amount;
+  }
+  const drift = pace.reduce((a, p) => a + ((Math.max(0, p.spent - (refundBy[p.category] ?? 0)) * p.avg) / (p.expected || 1) - p.avg), 0);
   const projected = Math.round(usual - drift);
   return { usual, projected, ratio: usual > 0 ? projected / usual : 0.4 };
 }

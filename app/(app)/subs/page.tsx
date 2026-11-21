@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { CatIcon } from "@/components/Icons";
 import { useStore } from "@/lib/store";
 import { days, daysGainedOnGoal, goalsStuck, detectRecurring, inr } from "@/lib/twin";
@@ -13,9 +14,14 @@ export default function Subs() {
   const monthly = alive.reduce((a, r) => a + r.last, 0);
   const goa = state.goals.findIndex((g) => /goa/i.test(g.name));
 
+  const [confirm, setConfirm] = useState<string | null>(null);
+  // one timer per armed confirmation; re-arming or unmounting clears the old one
+  useEffect(() => { if (!confirm) return; const t = setTimeout(() => setConfirm(null), 4000); return () => clearTimeout(t); }, [confirm]);
   const bury = (m: string, amt: number, due: string) => {
+    if (confirm !== m) { setConfirm(m); return; }
+    setConfirm(null);
     update((s) => ({ ...s, cancelled: [...s.cancelled, m], memoryDiff: { at: new Date().toISOString(), lines: [`${m} marked for cancellation → ${inr(amt * 12)}/year freed`, `Reminder: cancel inside the app before the ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} renewal`] } }));
-    toast(`RIP ${m}  ${inr(amt * 12)}/year back in your pocket. Badge unlocked: Subscription Slayer `, "");
+    toast(`RIP ${m}. Cancel it in the ${m} app before ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short" })} and ${inr(amt * 12)}/year is yours again. Badge unlocked: Subscription Slayer`, "");
   };
 
   return (
@@ -49,7 +55,7 @@ export default function Subs() {
             </div>
             {r.note && <div className="small" style={{ fontWeight: 600 }}>{r.note}</div>}
             {r.status !== "active" && goa >= 0 && <div className="small" style={{ marginTop: 6 }}>{goalsStuck(state) ? <>Cancel → <b>{inr(r.last * 12)}/year</b> back</> : <>Cancel → Goa <b>{days(daysGainedOnGoal(state, goa, r.last))} sooner</b></>} </div>}
-            <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => bury(r.merchant, r.last, r.nextDue)}>Bury it</button>
+            <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => bury(r.merchant, r.last, r.nextDue)}>{confirm === r.merchant ? "Tap again to bury" : "Bury it"}</button>
           </div>
         ))}
       </div>
