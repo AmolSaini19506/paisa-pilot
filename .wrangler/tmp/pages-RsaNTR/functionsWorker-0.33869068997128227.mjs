@@ -1118,8 +1118,9 @@ var init_categories = __esm({
 });
 
 // api/ai.ts
-function fallbackGuard(voice) {
-  return voice === "roast" ? "Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp \u{1F605} I don't name stocks or funds. What I CAN do: your emergency fund is at ~2.1 months, so step one is getting that to 6. After that, here's the maths: \u20B95,000/month for 10 years at an assumed 10% a year grows to about \u20B910.3 lakh vs ~\u20B98.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?" : "Love that you're thinking about investing! \u{1F331} I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~2.1 months, and 6 months is the safe zone. Then, as an illustration: \u20B95,000/month for 10 years at an assumed 10% a year \u2248 \u20B910.3 lakh, vs \u2248 \u20B98.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?";
+function fallbackGuard(voice, ef = 1.5) {
+  const efs = ef.toFixed(1);
+  return voice === "roast" ? `Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp \u{1F605} I don't name stocks or funds. What I CAN do: your emergency fund is at ~${efs} months, so step one is getting that to 6. After that, here's the maths: \u20B95,000/month for 10 years at an assumed 10% a year grows to about \u20B910.3 lakh vs ~\u20B98.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?` : `Love that you're thinking about investing! \u{1F331} I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~${efs} months, and 6 months is the safe zone. Then, as an illustration: \u20B95,000/month for 10 years at an assumed 10% a year \u2248 \u20B910.3 lakh, vs \u2248 \u20B98.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?`;
 }
 async function llm(model, system, user, maxTokens = 1200) {
   if (!AI) throw new Error("AI binding missing");
@@ -1256,7 +1257,7 @@ Use tools to ground every number in the user's Money Twin. Express trade-offs as
 ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline naming any, then educate." : ""}`;
       if (!AI) {
         step("Coach", "AI unavailable \u2192 offline template answer");
-        const text2 = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        const text2 = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
         return J({ data: { text: text2, guardrail: flagged, facts: [] }, trace: trace3, llm: false });
       }
       const facts = [];
@@ -1300,12 +1301,12 @@ TOOL RESULTS (ground truth, use these numbers):
 ${JSON.stringify(results).slice(0, 7e3)}`, history, 500);
       } catch (e2) {
         step("Coach", "AI error \u2192 offline template answer", e2.message);
-        text = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
       }
       let guard = flagged;
       if (NAMES_SECURITY.test(text)) {
         step("Guardrail", "Post-check: named a security \u2192 replaced with education answer");
-        text = fallbackGuard(voice);
+        text = fallbackGuard(voice, ctx?.twin?.efMonths);
         guard = true;
       } else step("Guardrail", "Post-check passed: no securities named");
       step("Coach", `Answered with ${SMART.split("/").pop()}`);
@@ -43913,13 +43914,13 @@ var init_functionsRoutes_0_20599838503365064 = __esm({
   }
 });
 
-// ../.wrangler/tmp/bundle-bAnBir/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-s0DXqC/middleware-loader.entry.ts
 init_functionsRoutes_0_20599838503365064();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// ../.wrangler/tmp/bundle-bAnBir/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-s0DXqC/middleware-insertion-facade.js
 init_functionsRoutes_0_20599838503365064();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
@@ -44452,7 +44453,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-bAnBir/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-s0DXqC/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -44488,7 +44489,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-bAnBir/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-s0DXqC/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

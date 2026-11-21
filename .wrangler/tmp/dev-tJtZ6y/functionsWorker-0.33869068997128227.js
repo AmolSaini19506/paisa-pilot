@@ -1297,8 +1297,9 @@ var init_categories = __esm({
     CAT = Object.fromEntries(CATEGORIES.map((c2) => [c2.name, c2]));
   }
 });
-function fallbackGuard(voice) {
-  return voice === "roast" ? "Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp \u{1F605} I don't name stocks or funds. What I CAN do: your emergency fund is at ~2.1 months, so step one is getting that to 6. After that, here's the maths: \u20B95,000/month for 10 years at an assumed 10% a year grows to about \u20B910.3 lakh vs ~\u20B98.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?" : "Love that you're thinking about investing! \u{1F331} I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~2.1 months, and 6 months is the safe zone. Then, as an illustration: \u20B95,000/month for 10 years at an assumed 10% a year \u2248 \u20B910.3 lakh, vs \u2248 \u20B98.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?";
+function fallbackGuard(voice, ef = 1.5) {
+  const efs = ef.toFixed(1);
+  return voice === "roast" ? `Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp \u{1F605} I don't name stocks or funds. What I CAN do: your emergency fund is at ~${efs} months, so step one is getting that to 6. After that, here's the maths: \u20B95,000/month for 10 years at an assumed 10% a year grows to about \u20B910.3 lakh vs ~\u20B98.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?` : `Love that you're thinking about investing! \u{1F331} I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~${efs} months, and 6 months is the safe zone. Then, as an illustration: \u20B95,000/month for 10 years at an assumed 10% a year \u2248 \u20B910.3 lakh, vs \u2248 \u20B98.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?`;
 }
 __name(fallbackGuard, "fallbackGuard");
 async function llm(model, system, user, maxTokens = 1200) {
@@ -1440,7 +1441,7 @@ Use tools to ground every number in the user's Money Twin. Express trade-offs as
 ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline naming any, then educate." : ""}`;
       if (!AI) {
         step("Coach", "AI unavailable \u2192 offline template answer");
-        const text2 = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        const text2 = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
         return J({ data: { text: text2, guardrail: flagged, facts: [] }, trace: trace3, llm: false });
       }
       const facts = [];
@@ -1484,12 +1485,12 @@ TOOL RESULTS (ground truth, use these numbers):
 ${JSON.stringify(results).slice(0, 7e3)}`, history, 500);
       } catch (e2) {
         step("Coach", "AI error \u2192 offline template answer", e2.message);
-        text = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
       }
       let guard = flagged;
       if (NAMES_SECURITY.test(text)) {
         step("Guardrail", "Post-check: named a security \u2192 replaced with education answer");
-        text = fallbackGuard(voice);
+        text = fallbackGuard(voice, ctx?.twin?.efMonths);
         guard = true;
       } else step("Guardrail", "Post-check passed: no securities named");
       step("Coach", `Answered with ${SMART.split("/").pop()}`);

@@ -19,10 +19,11 @@ const GUARD_RULES = `GUARDRAILS (non-negotiable):
 - When asked, say so kindly in one line, then teach the concept (e.g. SIP vs FD vs emergency fund, risk, time horizon, diversification, expense ratio) and model numbers with ASSUMED generic returns, clearly labelled as assumptions.
 - Emergency fund and high-interest debt come before risky investing.`;
 
-function fallbackGuard(voice: string) {
+function fallbackGuard(voice: string, ef: number = 1.5) {
+  const efs = ef.toFixed(1);
   return voice === "roast"
-    ? "Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp 😅 I don't name stocks or funds. What I CAN do: your emergency fund is at ~2.1 months, so step one is getting that to 6. After that, here's the maths: ₹5,000/month for 10 years at an assumed 10% a year grows to about ₹10.3 lakh vs ~₹8.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?"
-    : "Love that you're thinking about investing! 🌱 I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~2.1 months, and 6 months is the safe zone. Then, as an illustration: ₹5,000/month for 10 years at an assumed 10% a year ≈ ₹10.3 lakh, vs ≈ ₹8.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?";
+    ? `Bestie, I'm a money coach, not your stock-tip uncle on WhatsApp 😅 I don't name stocks or funds. What I CAN do: your emergency fund is at ~${efs} months, so step one is getting that to 6. After that, here's the maths: ₹5,000/month for 10 years at an assumed 10% a year grows to about ₹10.3 lakh vs ~₹8.2 lakh at an assumed 6% FD-like rate. Higher assumed return = higher risk + bigger swings. Want me to model a few amounts?`
+    : `Love that you're thinking about investing! 🌱 I can't recommend specific stocks or funds, but I can help you think it through. First, your emergency fund is ~${efs} months, and 6 months is the safe zone. Then, as an illustration: ₹5,000/month for 10 years at an assumed 10% a year ≈ ₹10.3 lakh, vs ≈ ₹8.2 lakh at an assumed 6%. Higher return assumptions come with more risk. Want me to model different amounts?`;
 }
 
 // ---------- helpers ----------
@@ -172,7 +173,7 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
 
       if (!AI) {
         step("Coach", "AI unavailable → offline template answer");
-        const text = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        const text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
         return J({ data: { text, guardrail: flagged, facts: [] }, trace, llm: false });
       }
 
@@ -206,12 +207,12 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
         text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}`, history, 500);
       } catch (e: any) {
         step("Coach", "AI error → offline template answer", e.message);
-        text = flagged ? fallbackGuard(voice) : offlineCoach(last, ctx, voice);
+        text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
       }
       let guard = flagged;
       if (NAMES_SECURITY.test(text)) {
         step("Guardrail", "Post-check: named a security → replaced with education answer");
-        text = fallbackGuard(voice); guard = true;
+        text = fallbackGuard(voice, ctx?.twin?.efMonths); guard = true;
       } else step("Guardrail", "Post-check passed: no securities named");
       step("Coach", `Answered with ${SMART.split("/").pop()}`);
       return J({ data: { text, guardrail: guard, facts }, trace, llm: true });
