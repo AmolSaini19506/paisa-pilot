@@ -154,7 +154,8 @@ export function generateSeed(): Txn[] {
 }
 
 export function initialState(): AppState {
-  const txns = generateSeed();
+  // categorised above from the SMS text; the text itself is never kept
+  const txns = generateSeed().map((t) => ({ ...t, raw: "" }));
   return {
     version: 3,
     profile: PROFILE,
@@ -163,7 +164,7 @@ export function initialState(): AppState {
     goals: GOALS,
     facts: [
       { id: "f1", text: "Landlord said rent goes up 8% from 1 Mar 2027", date: "2027-03-01", source: "coach chat", createdAt: "2026-11-02" },
-      { id: "f2", text: "Diwali + cousin's wedding in Dec usually means ~₹25k extra spend", date: "2026-12-10", source: "coach chat", createdAt: "2026-11-05" },
+      { id: "f2", text: "Diwali in Nov + cousin's wedding in Dec usually mean ~₹25k extra spend", date: "2026-12-10", source: "coach chat", createdAt: "2026-11-05" },
     ],
     traces: [],
     chat: [],

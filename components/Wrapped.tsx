@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X, Share2, RotateCcw } from "lucide-react";
 import type { AppState } from "@/lib/types";
-import { chaiLeakFor, healthScore, inr, monthLabel, monthStats } from "@/lib/twin";
+import { asOfMonth, chaiLeakFor, healthScore, inr, monthLabel, monthStats } from "@/lib/twin";
 import { Num } from "@/components/Motion";
 
 const FIXED = ["Rent", "EMI", "SIP/Investments", "Family transfers", "Bills & utilities", "Salary", "Refund"];
@@ -20,7 +20,7 @@ function persona(top: string | undefined, savedPct: number, leakN: number) {
 export default function Wrapped({ state, month, onClose }: { state: AppState; month: string; onClose: () => void }) {
   const s = monthStats(state, month);
   const leak = chaiLeakFor(state, month);
-  const hs = healthScore(state);
+  const hs = healthScore(asOfMonth(state, month));
   const data = useMemo(() => {
     const ms = state.txns.filter((t) => t.date.startsWith(month) && t.dir === "debit");
     const flex = ms.filter((t) => !FIXED.includes(t.category));

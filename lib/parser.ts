@@ -26,7 +26,12 @@ const MONTHS: Record<string, string> = {
 export const TODAY = "2026-11-21";
 
 /** "1,00,000.50" / "Rs.500" / "INR 2,499" / "₹ 99" -> number */
-export function parseAmount(s: string): number | undefined {
+export function parseAmount(input: string): number | undefined {
+  // never read the balance as the amount: drop "Avl Bal INR 1.2 lakh" style clauses first
+  const s = input.replace(/(?:avl\.?\s*bal(?:ance)?|available\s+bal(?:ance)?|a\/c\s+bal(?:ance)?|closing\s+bal(?:ance)?|\bbal(?:ance)?)\s*(?:is|:|-)?\s*(?:rs\.?|inr|₹)?\s*[\d,]+(?:\.\d+)?\s*(?:lakhs?|lacs?|crores?|cr|k|l\b)?/gi, " ");
+  // prefer the figure right next to debited/credited/paid/sent/received
+  const near = s.match(/(?:debited|credited|paid|sent|received|spent|withdrawn)\b[^₹\d]{0,25}((?:rs\.?|inr|₹)\s*[\d,]+(?:\.\d+)?(?:\s*(?:lakhs?|lacs?|crores?|cr|k|l)\b)?)/i);
+  if (near && near[1] !== s) { const v = parseAmount(near[1]); if (v !== undefined) return v; }
   const big = s.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)\s*(lakhs?|lacs?|l|crores?|cr|k)\b/i);
   if (big) {
     const u = big[2].toLowerCase();

@@ -5,7 +5,7 @@ import { CatIcon, GoalIcon, Ico } from "@/components/Icons";
 import { CalendarRange, Coffee, Inbox, MessageCircle, ReceiptText, Repeat, Target } from "lucide-react";
 import { Num, useSpring } from "@/components/Motion";
 import { useStore } from "@/lib/store";
-import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, healthScore, inr, nudges, simulate, BASE, days, etaLabel } from "@/lib/twin";
+import { monthLeft, avgByCategory, chaiLeak, computeTwin, daysGainedOnGoal, goalsStuck, healthScore, inr, nudges, simulate, BASE, days, etaLabel } from "@/lib/twin";
 
 function Ring({ score: target }: { score: number }) {
   const score = useSpring(target, 0.9);
@@ -102,7 +102,7 @@ export default function Home() {
           </div>
           {goaIdx >= 0 && (
             <div className="small" style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: "var(--lime-wash)" }}>
-              Halve it and Goa comes <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly / 2))} sooner</b>. Stop it and it&apos;s <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly))}</b>.
+              {goalsStuck(state) ? <>Goa is never at this rate right now. Plugging this leak is the quickest way to get it moving again.</> : <>Halve it and Goa comes <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly / 2))} sooner</b>. Stop it and it&apos;s <b>{days(daysGainedOnGoal(state, goaIdx, leak.monthly))}</b>.</>}
             </div>
           )}
         </div>

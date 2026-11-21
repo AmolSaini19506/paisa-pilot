@@ -40,7 +40,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const s = JSON.parse(raw);
-        if (s.version === 3) setState(s);
+        if (s.version === 3) setState({ ...s, txns: (s.txns ?? []).map((t: { raw?: string }) => ({ ...t, raw: "" })) });
       }
       setAuthed(localStorage.getItem(AUTH) === "1");
     } catch {}

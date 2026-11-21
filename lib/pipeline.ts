@@ -1,5 +1,5 @@
 import { buildMemory, categorize } from "./categorize";
-import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, redactRaw, TODAY, type ParsedSms } from "./parser";
+import { dedupeKey, isValidTxnDate, parseSms, parseStatementLine, prettyMerchant, TODAY, type ParsedSms } from "./parser";
 import { ai } from "./store";
 import type { AppState, TraceStep, Txn } from "./types";
 import { detectRecurring, inr, monthLeft } from "./twin";
@@ -98,7 +98,10 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   // 5. Twin diff
   const after: AppState = { ...state, txns: [...txns, ...state.txns] };
   const before = monthLeft(state).projected, now = monthLeft(after).projected;
-  const diff: string[] = [`+${txns.length} transactions from ${source.toUpperCase()} (${skipped.length} skipped: OTPs, promos, duplicates)`];
+  const reasons: Record<string, number> = {};
+  for (const k of skipped) { const w = k.why.trim(); reasons[w] = (reasons[w] ?? 0) + 1; }
+  const whyTxt = Object.entries(reasons).map(([w, n]) => `${n} ${w.startsWith("OTP") ? "OTP" : w.replace(/,.*$/, "").toLowerCase()}`).join(", ");
+  const diff: string[] = [`+${txns.length} transactions from ${source.toUpperCase()}${skipped.length ? ` (${skipped.length} skipped: ${whyTxt})` : ""}`];
   const recB = new Set(detectRecurring(state).filter((r) => r.status !== "active").map((r) => r.merchant + r.status));
   for (const r of detectRecurring(after)) if (r.status !== "active" && !recB.has(r.merchant + r.status)) diff.push(`Subscription alert: ${r.merchant} — ${r.note}`);
   const llmRows = txns.filter((t) => t.src === "llm");
@@ -109,6 +112,6 @@ export async function ingest(state: AppState, source: "sms" | "csv" | "pdf", pre
   st("Twin builder", "Updated Money Twin + wrote memory diff", diff.join(" | "));
 
   // privacy: never keep the full SMS (balances, account numbers)
-  txns.forEach((t) => { t.raw = redactRaw(t.raw); });
+  txns.forEach((t) => { t.raw = ""; });
   return { added: txns, skipped, steps, diff, llmUsed };
 }

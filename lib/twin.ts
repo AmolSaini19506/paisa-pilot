@@ -115,8 +115,9 @@ export function chaiLeak(state: AppState) {
   const perDay = monthly / 30;
   const by: Record<string, { n: number; amt: number }> = {};
   for (const t of small) { const k = t.category === "Other" ? "Mystery UPI" : t.category; (by[k] ??= { n: 0, amt: 0 }); by[k].n++; by[k].amt += t.amount; }
-  const count = Math.round(small.length / FULL_MONTHS.length);
-  return { monthly, perDay, count, by: Object.entries(by).map(([k, v]) => ({ name: k, n: Math.round(v.n / 3), amt: v.amt / 3 })).sort((a, b) => b.amt - a.amt) };
+  const rows = Object.entries(by).map(([k, v]) => ({ name: k, n: Math.round(v.n / 3), amt: v.amt / 3 })).sort((a, b) => b.amt - a.amt);
+  const count = rows.reduce((a, r) => a + r.n, 0);
+  return { monthly, perDay, count, by: rows };
 }
 
 /** Chai leak inside one calendar month only. */
@@ -239,6 +240,9 @@ export function simulate(state: AppState, sc: Scenario, withFacts = true): Proje
   };
 }
 
+/** True when nothing is left to save this month, so goal ETAs are "never at this rate". */
+export function goalsStuck(state: AppState) { return monthLeft(state).projected <= 0; }
+
 /** days a goal moves if `monthly` rupees/month are freed */
 export function daysGainedOnGoal(state: AppState, goalIdx: number, monthly: number) {
   const g = state.goals[goalIdx];
@@ -296,12 +300,13 @@ export function nudges(state: AppState): Nudge[] {
       const over = p.spent - p.expected;
       const proj = (p.spent / 21) * 30 - p.avg;
       const dd = goa >= 0 ? daysGainedOnGoal(state, goa, Math.max(proj, 0)) : 0;
+      const stuck = goalsStuck(state);
       out.push({
         emoji: "", tone: "warn",
         title: roast ? `${p.category} is in its villain era` : `${p.category} running a little hot`,
         body: roast
-          ? `${inr(over)} over pace by day 21. Keep this up and Goa slips ~${days(dd)}.${/food|dining|groceries|snacks/i.test(p.category) ? " The kitchen misses you bestie." : /shopping/i.test(p.category) ? " The cart can wait, bestie." : ""}`
-          : `You're ${Math.round((p.ratio - 1) * 100)}% ahead of your usual pace. Easing off for 9 days keeps Goa on schedule (~${days(dd)} saved). You got this!`,
+          ? `${inr(over)} over pace by day 21. Keep this up and ${stuck ? "Goa is never at this rate" : `Goa slips ~${days(dd)}`}.${/food|dining|snacks/i.test(p.category) ? " The kitchen misses you bestie." : /groceries/i.test(p.category) ? " Stock up smarter, bestie." : /shopping/i.test(p.category) ? " The cart can wait, bestie." : ""}`
+          : `You're ${Math.round((p.ratio - 1) * 100)}% ahead of your usual pace. ${stuck ? "Easing off for 9 days is how Goa gets moving again." : `Easing off for 9 days keeps Goa on schedule (~${days(dd)} saved).`} You got this!`,
       });
     }
   }
@@ -309,9 +314,9 @@ export function nudges(state: AppState): Nudge[] {
   const pc = recs.find((r) => r.status === "price_changed");
   if (pc) out.push({ emoji: "", tone: "warn", title: `${pc.merchant} plan went up`, body: `${pc.note}. That's ${inr((pc.last - pc.prev) * 12)}/year extra. Price hike or a plan upgrade? Worth a look.` });
   const un = recs.find((r) => r.status === "unused" && !state.cancelled.includes(r.merchant));
-  if (un) out.push({ emoji: "", tone: "warn", title: roast ? `${un.merchant} is ghosting your body, not your bank` : `${un.merchant} might be unused`, body: `${inr(un.last)}/month and ${un.note?.toLowerCase()}` });
+  if (un) out.push({ emoji: "", tone: "warn", title: roast ? `${un.merchant} is ghosting your body, not your bank` : `${un.merchant} might be unused`, body: `${inr(un.last)}/month. ${un.note ?? ""}` });
   const leak = chaiLeak(state);
-  out.push({ emoji: "", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. Halving it gets Goa ${days(goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0)} sooner.` });
+  out.push({ emoji: "", tone: "info", title: `Chai leak: ${inr(leak.perDay)}/day`, body: `${leak.count} tiny UPI payments a month = ${inr(leak.monthly)}. ${goalsStuck(state) ? "Halving it is the fastest way to get Goa moving again." : `Halving it gets Goa ${days(goa >= 0 ? daysGainedOnGoal(state, goa, leak.monthly / 2) : 0)} sooner.`}` });
   return out;
 }
 

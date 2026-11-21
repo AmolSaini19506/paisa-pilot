@@ -6,7 +6,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { TraceButton } from "@/components/Shell";
 import MicButton from "@/components/MicButton";
 import { agentContext, ai, useStore } from "@/lib/store";
-import { BASE, days, etaLabel, inr, simulate, type Scenario } from "@/lib/twin";
+import { BASE, days, etaLabel, inr, tidyMoney, simulate, type Scenario } from "@/lib/twin";
 
 const SLIDERS: { k: keyof Scenario; label: string; max: number; step: number; unit: string; emoji: string }[] = [
   { k: "foodCut", label: "Order in / dine out less", max: 60, step: 5, unit: "%", emoji: "" },
@@ -44,7 +44,8 @@ export default function Goals() {
     if (!nl.trim()) return;
     setBusy(true);
     const r = await ai<Scenario>("scenario", { text: nl });
-    const next = { ...BASE, ...(r.data ?? {}) };
+    const raw = { ...BASE, ...(r.data ?? {}) };
+    const next: Scenario = { ...BASE, ...Object.fromEntries(SLIDERS.map((s) => [s.k, Math.min(s.max, Math.max(0, Math.round(Number(raw[s.k]) || 0)))])) };
     setSc(next);
     const p = simulate(state, next);
     const lines = p.goals.map((g) => `${g.goal.name}: ${g.never ? "no surplus left to save" : g.deltaDays >= 0 ? `${days(g.deltaDays)} sooner` : `${days(-g.deltaDays)} later`} (ETA ${etaLabel(g, true)})`);
@@ -72,7 +73,7 @@ export default function Goals() {
     <div className="grid stagger" style={{ gap: 22 }}>
       <div>
         <h1>Goals & What-if</h1>
-        <p className="muted">Move a slider or just type it. Every goal date reacts live. Rent hike from memory is already priced in</p>
+        <p className="muted">Move a slider or just type it. Every goal date reacts live. Your remembered 8% rent hike from Mar &apos;27 is already in both lines</p>
       </div>
 
       <div className="card" style={{ background: "var(--tint)" }}>
@@ -148,7 +149,7 @@ export default function Goals() {
         </div>
         {state.letter && (
           <div className="card popin" style={{ marginTop: 16, background: "#fffdf5", color: "#222", whiteSpace: "pre-wrap", fontSize: 16, lineHeight: 1.6, fontFamily: "Georgia, serif", transform: "rotate(-0.6deg)" }}>
-            {state.letter.text}
+            {tidyMoney(state.letter.text)}
           </div>
         )}
       </div>

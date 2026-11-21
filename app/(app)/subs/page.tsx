@@ -1,7 +1,7 @@
 "use client";
 import { CatIcon } from "@/components/Icons";
 import { useStore } from "@/lib/store";
-import { days, daysGainedOnGoal, detectRecurring, inr } from "@/lib/twin";
+import { days, daysGainedOnGoal, goalsStuck, detectRecurring, inr } from "@/lib/twin";
 
 export default function Subs() {
   const { state, update, toast } = useStore();
@@ -48,7 +48,7 @@ export default function Subs() {
               {r.amounts.map((a, i) => <div key={i} style={{ width: 18, height: `${(a / Math.max(...r.amounts)) * 100}%`, background: i === r.amounts.length - 1 && r.status === "price_changed" ? "var(--red)" : "var(--purple)", border: "2px solid var(--ink)", borderRadius: 4 }} />)}
             </div>
             {r.note && <div className="small" style={{ fontWeight: 600 }}>{r.note}</div>}
-            {r.status !== "active" && goa >= 0 && <div className="small" style={{ marginTop: 6 }}>Cancel → Goa <b>{days(daysGainedOnGoal(state, goa, r.last))} sooner</b> </div>}
+            {r.status !== "active" && goa >= 0 && <div className="small" style={{ marginTop: 6 }}>{goalsStuck(state) ? <>Cancel → <b>{inr(r.last * 12)}/year</b> back</> : <>Cancel → Goa <b>{days(daysGainedOnGoal(state, goa, r.last))} sooner</b></>} </div>}
             <button className="btn sm ghost" style={{ marginTop: 10 }} onClick={() => bury(r.merchant, r.last, r.nextDue)}>Bury it</button>
           </div>
         ))}

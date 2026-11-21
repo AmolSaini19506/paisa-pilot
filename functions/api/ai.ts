@@ -182,7 +182,7 @@ export async function onRequestPost(context: any) {
       const flagged = ASKS_SECURITY.test(last);
       step("Guardrail", flagged ? "Pre-check: asks for a specific security → education mode" : "Pre-check passed");
       const persona = voice === "roast"
-        ? "Voice: playful ROAST mode. Gen-Z, witty, light Hinglish (yaar, bhai, scene, bestie), max 2 emoji. Roast the spending, never the person. Still precise with numbers."
+        ? "Voice: playful ROAST mode. Gen-Z, witty, light Hinglish (yaar, scene, bestie; never 'bhai' or 'bro', the user may not be male), max 2 emoji. Roast the spending, never the person. Still precise with numbers."
         : "Voice: wholesome HYPE mode. Gen-Z, warm, encouraging, light Hinglish, max 2 emoji. Celebrate wins, frame cuts as power moves.";
       const system = `You are Paisa Pilot, an Indian personal finance coach for young earners. ${persona}
 Use tools to ground every number in the user's Money Twin. Express trade-offs as days gained/lost on named goals. Keep replies under 110 words, INR with Indian grouping. If the user shares a future money event, call remember_fact.
@@ -312,7 +312,7 @@ function offlineCoach(q: string, ctx: any, voice: string) {
   const tw = ctx.twin;
   if (/goa|trip|afford/i.test(q)) {
     const g = ctx.goals.find((x: any) => /goa/i.test(x.name));
-    return `${r ? "Scene check bhai 🏖️" : "Ooh Goa! 🏖️"} You need ${"₹" + (g.target - g.saved).toLocaleString("en-IN")} more by 15 Mar. Your surplus is ~₹${Math.round(tw.surplus).toLocaleString("en-IN")}/month and 30% of it goes to Goa, so it's doable${r ? " IF Swiggy stops being your love language" : ""}. Cutting delivery 30% gets you there ~2 weeks earlier.`;
+    return `${r ? "Scene check yaar 🏖️" : "Ooh Goa! 🏖️"} You need ${"₹" + (g.target - g.saved).toLocaleString("en-IN")} more by 15 Mar. Your surplus is ~₹${Math.round(tw.surplus).toLocaleString("en-IN")}/month and 30% of it goes to Goa, so it's doable${r ? " IF Swiggy stops being your love language" : ""}. Cutting delivery 30% gets you there ~2 weeks earlier.`;
   }
   return `${r ? "Okay bestie, real talk:" : "Here's where you stand 💪"} income ₹${tw.income.toLocaleString("en-IN")}, fixed costs ~₹${Math.round(tw.fixed).toLocaleString("en-IN")}, surplus ~₹${Math.round(tw.surplus).toLocaleString("en-IN")}/month, emergency fund ${tw.efMonths.toFixed(1)} months. Biggest lever right now: food delivery + the chai leak. Ask me "what if I cut Swiggy by a third?"`;
 }
