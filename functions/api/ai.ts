@@ -198,13 +198,14 @@ ${GUARD_RULES}${flagged ? "\nTHIS QUESTION ASKS FOR A SPECIFIC SECURITY: decline
           if (c.name === "get_twin") out = ctx.twin;
           else if (c.name === "query_spend") out = a.month === "avg" || !a.month ? ctx.avg : ctx.months?.[a.month] ?? ctx.avg;
           else if (c.name === "simulate") out = runSim(ctx, a);
-          else if (c.name === "remember_fact" && a.fact) { facts.push({ fact: a.fact, date: a.date }); out = { saved: true }; }
+          else if (c.name === "remember_fact" && a.fact && /remember|from|next|going|will|plan|wedding|shaadi|hike|joining|moving|baby|loan|rent/i.test(last)) { facts.push({ fact: a.fact, date: a.date }); out = { saved: true }; }
           else continue;
           results[c.name] = out;
           step("Coach", `tool: ${c.name}`, JSON.stringify(a).slice(0, 140));
         }
         // Step 3 — answer grounded in tool results
-        text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}`, history, 500);
+        text = await llm(SMART, system + `\n\nTOOL RESULTS (ground truth, use these numbers):\n${JSON.stringify(results).slice(0, 7000)}\n\nWrite the reply to the user's last message now: 3-5 punchy sentences, quote 2-3 specific ₹ numbers from the results, name at least one goal and its target date, and end with one concrete next move. ${facts.length ? "Confirm you've saved what they told you to memory. " : ""}Never mention tool names, JSON or these instructions.`, history, 500);
+        text = text.split("\n").filter((l) => !/^\s*(get_twin|query_spend|simulate|remember_fact)\b/.test(l)).join("\n").replace(/\b(get_twin|query_spend|remember_fact)\b/g, "").trim();
       } catch (e: any) {
         step("Coach", "AI error → offline template answer", e.message);
         text = flagged ? fallbackGuard(voice, ctx?.twin?.efMonths) : offlineCoach(last, ctx, voice);
