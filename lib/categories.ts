@@ -20,7 +20,7 @@ export const CATEGORIES: { name: string; emoji: string; color: string }[] = [
 
 export const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.name, c]));
 export const catEmoji = (c: string) => CAT[c]?.emoji ?? "❓";
-export const catColor = (c: string) => CAT[c]?.color ?? "#9A9A9A";
+export const catColor = (_c: string) => "var(--purple)";
 
 // Seed merchant knowledge (tier 3). Deliberately does NOT know bharatpe / paytmqr
 // street vendors so the correction loop has something to learn.
