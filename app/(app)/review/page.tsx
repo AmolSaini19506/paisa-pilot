@@ -1,4 +1,5 @@
 "use client";
+import Wrapped from "@/components/Wrapped";
 import { useState } from "react";
 import { TraceButton } from "@/components/Shell";
 import { CatIcon, GoalIcon } from "@/components/Icons";
@@ -64,6 +65,7 @@ export default function Review() {
   const { state, update, addTrace } = useStore();
   const [month, setMonth] = useState("2026-10");
   const [busy, setBusy] = useState(false);
+  const [play, setPlay] = useState(false);
   const s = monthStats(state, month);
   const hs = healthScore(state);
   const leak = chaiLeak(state);
@@ -123,22 +125,13 @@ export default function Review() {
         </div>
 
         <div>
-          <div id="wrapped" className="popin" style={{ background: wrappedBg, color: "#fff", border: "var(--line)", borderRadius: 24, boxShadow: "var(--shadow-lg)", padding: 22, aspectRatio: "4 / 5", display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
-            <div className="row between"><span style={{ fontWeight: 600, fontFamily: "Bricolage Grotesque", fontSize: 20 }}>₹ Paisa Wrapped</span><span className="chip" style={{ background: "#111", color: "#fff", borderColor: "#fff" }}>{monthLabel(month)}</span></div>
-            <div style={{ fontSize: 14, opacity: .9 }}>Your top category was</div>
-            <div style={{ fontFamily: "Bricolage Grotesque", fontWeight: 600, fontSize: 34, lineHeight: 1 }}>{top ? top[0] : "—"}</div>
-            <div style={{ fontSize: 14 }}>{top ? inr(top[1]) : ""}</div>
-            <div style={{ background: "#ffffff22", borderRadius: 14, padding: 12, border: "2px solid #fff" }}>
-              <div style={{ fontSize: 13 }}>Most-visited merchant</div>
-              <div style={{ fontWeight: 600, fontSize: 20 }}>{s.topMerchant?.[0]} × {s.topMerchant?.[1]}</div>
-            </div>
-            <div className="row" style={{ gap: 10 }}>
-              <div style={{ flex: 1, background: "#111", borderRadius: 14, padding: 10 }}><div style={{ fontSize: 12 }}>Chai leak</div><div style={{ fontWeight: 600 }}>{inr(leak.monthly)}</div></div>
-              <div style={{ flex: 1, background: "#c6ff3d", color: "#111", borderRadius: 14, padding: 10 }}><div style={{ fontSize: 12 }}>Money Health</div><div style={{ fontWeight: 600 }}>{hs.score}/100</div></div>
-            </div>
-            <div style={{ marginTop: "auto", fontSize: 13, opacity: .9 }}>Biggest flex: {s.biggest?.merchant} {s.biggest && inr(s.biggest.amount)} </div>
-            <div style={{ fontSize: 12, opacity: .8 }}>paisa-pilot · made with AI agents</div>
-          </div>
+          <button className="w-poster" onClick={() => setPlay(true)} aria-label="Play your Paisa Wrapped">
+            <div className="w-kicker">Paisa Wrapped · {monthLabel(month)}</div>
+            <div className="w-huge">Your month,<br />as a story.</div>
+            <div className="w-poster-stack" aria-hidden><span>☕</span><span>🛵</span><span>✨</span></div>
+            <span className="w-play">▶ Play your Wrapped</span>
+          </button>
+          {play && <Wrapped state={state} month={month} onClose={() => setPlay(false)} />}
           <p className="small muted" style={{ marginTop: 10 }}>Screenshot-ready for your story or LinkedIn post.</p>
         </div>
       </div>
