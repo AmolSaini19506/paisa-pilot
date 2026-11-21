@@ -62,7 +62,7 @@ function TraceDrawer() {
 }
 
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const { authed, ready, logout, toasts, state, update, openTrace } = useStore();
+  const { authed, ready, logout, toasts, state, update, openTrace, reset, toast } = useStore();
   const path = usePathname();
   const router = useRouter();
   useEffect(() => { if (ready && !authed) router.replace("/"); }, [ready, authed, router]);
@@ -86,6 +86,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <button className="btn sm ghost" onClick={() => openTrace("all")}>🔍 All agent runs ({state.traces.length})</button>
           <div className="small muted">🔒 Raw SMS parsed in your session; only structured rows are kept.</div>
+          <button className="btn sm ghost" onClick={() => { reset(); toast("Demo data reset to fresh Riya ✨", "↺"); router.push("/home"); }}>↺ Reset demo data</button>
           <button className="btn sm ghost" onClick={() => { logout(); router.replace("/"); }}>Log out</button>
         </div>
       </aside>
