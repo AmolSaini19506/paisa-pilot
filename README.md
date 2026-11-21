@@ -25,5 +25,5 @@ Judge login: `judge@paisapilot.app` / `chai2026` (demo data, stored in the brows
 The password is checked by the Worker (`POST /api/login`), which returns a signed session token. `/api/ai` and `/api/pdf` reject requests without a valid token.
 
 - **Production:** set a Worker secret named `AUTH_SECRET` (any long random string) in Cloudflare → Workers → paisa-pilot → Settings → Variables and secrets. Without it, login is refused. `JUDGE_EMAIL` and `JUDGE_PASSWORD` can override the demo credentials.
-- **Preview builds:** add the same secret under the **Previews Base** tab too. A preview only sees secrets that existed when it was built, so push a new commit after adding it.
+- **Preview builds:** give previews their own random `AUTH_SECRET`, different from production. Set it under **Previews Base** for new previews. A preview that already exists does not pick up Base changes: set it in that preview's own settings, or run `npx wrangler preview secret put AUTH_SECRET --name <preview>`. Tokens are also tied to the host that issued them, so a preview token is rejected by production.
 - **Local:** `next dev` has no Worker, so login won't work there. Build and run the Worker instead: `npm run build && npx wrangler dev --var DEV_AUTH:1`.
