@@ -12,7 +12,7 @@ function Ring({ score: target }: { score: number }) {
   const r = 44, c = 2 * Math.PI * r;
   const color = score >= 70 ? "var(--lime)" : score >= 50 ? "var(--purple)" : "var(--red)";
   return (
-    <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label={`Money health ${score} of 100`} style={{ flexShrink: 0 }}>
+    <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label={`Money health ${target} of 100`} style={{ flexShrink: 0 }}>
       <circle cx="52" cy="52" r={r} fill="none" stroke="var(--hair)" strokeWidth="8" />
       <circle cx="52" cy="52" r={r} fill="none" stroke={color} strokeWidth="8" strokeDasharray={`${(score / 100) * c} ${c}`} transform="rotate(-90 52 52)" strokeLinecap="round" />
       <text x="52" y="58" textAnchor="middle" fontFamily="Bricolage Grotesque" fontWeight="500" fontSize="28" fill="var(--ink)">{Math.round(score)}</text>
